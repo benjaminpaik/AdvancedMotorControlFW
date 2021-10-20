@@ -34,7 +34,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "definitions.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,7 +66,7 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+volatile uint32_t g_adc_buffer[3];
 /* USER CODE END 0 */
 
 /**
@@ -99,6 +99,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USB_Device_Init();
   MX_TIM1_Init();
+  MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_SPI3_Init();
@@ -110,12 +111,11 @@ int main(void)
   MX_COMP4_Init();
   MX_DAC3_Init();
   MX_DAC1_Init();
-  MX_DMA_Init();
   MX_CORDIC_Init();
   MX_TIM3_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&g_adc_buffer, ARRAY_SIZE(g_adc_buffer));
   /* USER CODE END 2 */
 
   /* Init scheduler */

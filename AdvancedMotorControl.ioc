@@ -1,7 +1,7 @@
 #MicroXplorer Configuration settings - do not modify
 ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_1
-ADC1.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_1
-ADC1.Channel-2\#ChannelRegularConversion=ADC_CHANNEL_1
+ADC1.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_2
+ADC1.Channel-2\#ChannelRegularConversion=ADC_CHANNEL_3
 ADC1.ClockPrescaler=ADC_CLOCK_SYNC_PCLK_DIV4
 ADC1.DMAContinuousRequests=ENABLE
 ADC1.EOCSelection=ADC_EOC_SEQ_CONV
@@ -17,9 +17,9 @@ ADC1.OversamplingMode=DISABLE
 ADC1.Rank-0\#ChannelRegularConversion=1
 ADC1.Rank-1\#ChannelRegularConversion=2
 ADC1.Rank-2\#ChannelRegularConversion=3
-ADC1.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
-ADC1.SamplingTime-1\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
-ADC1.SamplingTime-2\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
+ADC1.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_12CYCLES_5
+ADC1.SamplingTime-1\#ChannelRegularConversion=ADC_SAMPLETIME_12CYCLES_5
+ADC1.SamplingTime-2\#ChannelRegularConversion=ADC_SAMPLETIME_12CYCLES_5
 ADC1.master=1
 ADC2.Channel-2\#ChannelRegularConversion=ADC_CHANNEL_3
 ADC2.Channel-3\#ChannelRegularConversion=ADC_CHANNEL_3

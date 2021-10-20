@@ -47,6 +47,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+extern uint32_t g_adc_buffer[3];
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -183,6 +184,9 @@ void ControlTask(void *argument)
 {
   /* USER CODE BEGIN ControlTask */
 
+  // start timer to trigger ADC conversions
+  HAL_TIM_Base_Start_IT(&htim3);
+
   /* Infinite loop */
   for(;;)
   {
@@ -193,7 +197,11 @@ void ControlTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-
+volatile uint32_t g_call_count = 0;
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+  g_call_count++;
+}
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
