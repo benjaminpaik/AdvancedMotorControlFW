@@ -115,6 +115,10 @@ int main(void)
   MX_TIM3_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
+  HAL_DAC_Start(&hdac3, DAC_CHANNEL_1);
+  HAL_DAC_Start(&hdac3, DAC_CHANNEL_2);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&g_adc_buffer, ARRAY_SIZE(g_adc_buffer));
   /* USER CODE END 2 */
 

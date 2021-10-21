@@ -184,6 +184,11 @@ void ControlTask(void *argument)
 {
   /* USER CODE BEGIN ControlTask */
 
+  uint16_t g_dac = 0;
+  // positive current limit
+  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 3000);
+  // negative current limit
+  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1000);
   // start timer to trigger ADC conversions
   HAL_TIM_Base_Start_IT(&htim3);
 
@@ -191,6 +196,12 @@ void ControlTask(void *argument)
   for(;;)
   {
     vTaskDelay(pdMS_TO_TICKS(10));
+
+
+    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, g_dac);
+    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_2, DAC_ALIGN_12B_R, (4095 - g_dac));
+    g_dac++;
+    g_dac &= 0xFFF;
   }
   /* USER CODE END ControlTask */
 }
