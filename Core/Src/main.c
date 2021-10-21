@@ -67,6 +67,7 @@ void MX_FREERTOS_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 volatile uint32_t g_adc_buffer[3];
+volatile uint32_t g_adc2_buffer[3];
 /* USER CODE END 0 */
 
 /**

@@ -26,6 +26,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "definitions.h"
+#include "adc.h"
 #include "dac.h"
 #include "tim.h"
 /* USER CODE END Includes */
@@ -48,6 +50,7 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 extern uint32_t g_adc_buffer[3];
+extern uint32_t g_adc2_buffer[3];
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -197,6 +200,7 @@ void ControlTask(void *argument)
   {
     vTaskDelay(pdMS_TO_TICKS(10));
 
+    HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&g_adc2_buffer, ARRAY_SIZE(g_adc2_buffer));
 
     HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, g_dac);
     HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_2, DAC_ALIGN_12B_R, (4095 - g_dac));
