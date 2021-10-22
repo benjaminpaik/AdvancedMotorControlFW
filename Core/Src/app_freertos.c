@@ -181,6 +181,7 @@ void LedTask(void *argument)
 
 /* USER CODE BEGIN Header_ControlTask */
 uint16_t g_encoder = 0;
+uint16_t g_dac = 0;
 /**
 * @brief Function implementing the controlTask thread.
 * @param argument: Not used
@@ -190,21 +191,25 @@ uint16_t g_encoder = 0;
 void ControlTask(void *argument)
 {
   /* USER CODE BEGIN ControlTask */
-//  uint16_t g_dac = 0;
-//  // positive current limit
-//  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 3000);
-//  // negative current limit
-//  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1000);
-//  // start timer to trigger ADC conversions
-//  HAL_TIM_Base_Start_IT(&htim3);
+  // positive current limit
+  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 4000);
+  // negative current limit
+  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 0);
+  // start timer to trigger ADC conversions
+  HAL_TIM_Base_Start_IT(&htim3);
   HAL_TIM_Encoder_Start(&htim8, TIM_CHANNEL_ALL);
+
+  enable_trap_drive(&motor, TRUE);
 
   /* Infinite loop */
   for(;;)
   {
     vTaskDelay(pdMS_TO_TICKS(10));
     g_encoder = TIM8->CNT;
-    update_hall_velocity(&motor, VELOCITY_GAIN);
+
+    HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, g_dac);
+    update_pwm_cmd(&motor, 1500);
+//    update_hall_velocity(&motor, VELOCITY_GAIN);
 
 //    HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&g_adc2_buffer, ARRAY_SIZE(g_adc2_buffer));
 //
@@ -212,8 +217,6 @@ void ControlTask(void *argument)
 //    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_2, DAC_ALIGN_12B_R, (4095 - g_dac));
 //    g_dac++;
 //    g_dac &= 0xFFF;
-
-
   }
 
 //  int32_t milliseconds = 0;
@@ -250,7 +253,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   update_hall_state(&motor);
-//  update_state_cmd(&motor);
+  update_state_cmd(&motor);
 }
 /* USER CODE END Application */
 
