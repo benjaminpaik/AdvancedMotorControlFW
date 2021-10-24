@@ -1850,8 +1850,9 @@ static HAL_StatusTypeDef PCD_EP_ISR_Handler(PCD_HandleTypeDef *hpcd)
         /* clear int flag */
         PCD_CLEAR_TX_EP_CTR(hpcd->Instance, epindex);
 
-        /* Manage Bulk Single Buffer Transaction */
-        if ((ep->type == EP_TYPE_BULK) && ((wEPVal & USB_EP_KIND) == 0U))
+        /* Manage all non bulk transaction or Bulk Single Buffer Transaction */
+        if ((ep->type != EP_TYPE_BULK) ||
+            ((ep->type == EP_TYPE_BULK) && ((wEPVal & USB_EP_KIND) == 0U)))
         {
           /* multi-packet on the NON control IN endpoint */
           TxByteNbre = (uint16_t)PCD_GET_EP_TX_CNT(hpcd->Instance, ep->num);

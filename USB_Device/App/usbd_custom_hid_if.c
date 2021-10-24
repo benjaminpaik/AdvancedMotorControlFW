@@ -23,7 +23,7 @@
 #include "usbd_custom_hid_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "usb_hid_api.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -92,7 +92,24 @@
 __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DESC_SIZE] __ALIGN_END =
 {
   /* USER CODE BEGIN 0 */
-  0x00,
+  0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
+  0x09, 0x01,                    // USAGE (Undefined)
+  0xa1, 0x01,                    // COLLECTION (Application)
+
+  0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+  0x26, 0xff, 0x00,              //   LOGICAL_MAXIMUM (255)
+
+  0x75, 0x08,                    //   REPORT_SIZE (8)
+  0x95, 0x40,                    //   REPORT_COUNT (this is the byte length)
+  0x09, 0x01,                    //   USAGE (Undefined)
+  0x81, 0x02,                    //   INPUT (Data,Var,Abs,Vol)
+
+  0x95, 0x40,                    //   REPORT_COUNT (this is the byte length)
+  0x09, 0x01,                    //   USAGE (Undefined)
+  0x91, 0x02,                    //   OUTPUT (Data,Var,Abs,Vol)
+  0x95, 0x01,                    //   REPORT_COUNT (this is the byte length)
+  0x09, 0x01,                    //   USAGE (Undefined)
+  0xb1, 0x02,                    //   FEATURE (Data,Var,Abs)
   /* USER CODE END 0 */
   0xC0    /*     END_COLLECTION	             */
 };
@@ -125,7 +142,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 static int8_t CUSTOM_HID_Init_FS(void);
 static int8_t CUSTOM_HID_DeInit_FS(void);
-static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state);
+static int8_t CUSTOM_HID_OutEvent_FS(uint8_t *state);
 
 /**
   * @}
@@ -174,14 +191,11 @@ static int8_t CUSTOM_HID_DeInit_FS(void)
   * @param  state: Event state
   * @retval USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
+static int8_t CUSTOM_HID_OutEvent_FS(uint8_t *state)
 {
   /* USER CODE BEGIN 6 */
-  UNUSED(event_idx);
-  UNUSED(state);
-
-  /* Start next USB packet transfer once data processing is completed */
-  USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+  load_usb_rx_data(state);
+  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, get_usb_tx_buffer(), NUM_BYTES);
 
   return (USBD_OK);
   /* USER CODE END 6 */

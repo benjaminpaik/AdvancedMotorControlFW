@@ -44,13 +44,13 @@ extern "C" {
 #define CUSTOM_HID_EPIN_ADDR                         0x81U
 
 #ifndef CUSTOM_HID_EPIN_SIZE
-#define CUSTOM_HID_EPIN_SIZE                         0x02U
+#define CUSTOM_HID_EPIN_SIZE                         0x40U
 #endif
 
 #define CUSTOM_HID_EPOUT_ADDR                        0x01U
 
 #ifndef CUSTOM_HID_EPOUT_SIZE
-#define CUSTOM_HID_EPOUT_SIZE                        0x02U
+#define CUSTOM_HID_EPOUT_SIZE                        0x40U
 #endif
 
 #define USB_CUSTOM_HID_CONFIG_DESC_SIZ               41U
@@ -102,7 +102,7 @@ typedef struct _USBD_CUSTOM_HID_Itf
   uint8_t *pReport;
   int8_t (* Init)(void);
   int8_t (* DeInit)(void);
-  int8_t (* OutEvent)(uint8_t event_idx, uint8_t state);
+  int8_t (* OutEvent)(uint8_t *state);
 
 } USBD_CUSTOM_HID_ItfTypeDef;
 

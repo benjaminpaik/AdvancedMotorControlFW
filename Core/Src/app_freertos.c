@@ -27,6 +27,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "definitions.h"
+#include "usb_hid_api.h"
 #include "math.h"
 #include "adc.h"
 #include "dac.h"
@@ -228,28 +229,6 @@ void ControlTask(void *argument)
 //    g_dac++;
 //    g_dac &= 0xFFF;
   }
-
-//  int32_t milliseconds = 0;
-//  float_t sine_scale = 0;
-//  float_t cos_scale = 0;
-
-//  /* Infinite loop */
-//  for(;;)
-//  {
-//    vTaskDelay(pdMS_TO_TICKS(1));
-//
-//    sine_scale = sinf(M_PI * (2 * 0.001) * milliseconds ) * 1000;
-//    cos_scale = cosf(M_PI * (2 * 0.001) * milliseconds ) * 1000;
-//    if(++milliseconds >= 1000) milliseconds = 0;
-//
-//    set_usb_data32(0, sine_scale);
-//    set_usb_data32(1, cos_scale);
-//    set_usb_data32(2, (milliseconds > 500) * 1000);
-//    set_usb_data32(3, milliseconds);
-//
-//    set_usb_mode(get_mode());
-//    load_usb_tx_data();
-//  }
   /* USER CODE END ControlTask */
 }
 
@@ -263,10 +242,26 @@ void ControlTask(void *argument)
 void CommTask(void *argument)
 {
   /* USER CODE BEGIN CommTask */
+  int32_t milliseconds = 0;
+  float sine_scale = 0;
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+  init_usb_data();
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
+    sine_scale = sinf(M_PI * (2 * 0.001) * milliseconds ) * 1000;
+    if(++milliseconds >= 1000) milliseconds = 0;
+    // load telemetry feedback
+    set_usb_data32(0, get_usb_data32(0));
+    set_usb_data32(1, sine_scale);
+    set_usb_data32(2, milliseconds);
+
+    set_usb_mode(get_usb_mode());
+    update_usb_timestamp();
+    load_usb_tx_data();
   }
   /* USER CODE END CommTask */
 }
