@@ -30,6 +30,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32g4xx_hal.h"
 
+#include "hci_tl_interface.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -115,6 +116,9 @@ void Error_Handler(void);
 #define BLE_SPI_CS_GPIO_Port GPIOD
 #define BLE_SPI_IRQ_Pin GPIO_PIN_4
 #define BLE_SPI_IRQ_GPIO_Port GPIOB
+#define BLE_SPI_IRQ_EXTI_IRQn EXTI4_IRQn
+#define BLE_SPI_RESET_Pin GPIO_PIN_5
+#define BLE_SPI_RESET_GPIO_Port GPIOB
 #define ENCODER_Z_Pin GPIO_PIN_6
 #define ENCODER_Z_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
