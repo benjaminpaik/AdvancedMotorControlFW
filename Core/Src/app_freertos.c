@@ -28,7 +28,9 @@
 /* USER CODE BEGIN Includes */
 #include "definitions.h"
 #include "usb_hid_api.h"
-#include "math.h"
+#include "app_bluenrg_2.h"
+#include "gatt_db.h"
+#include "dsp.h"
 #include "adc.h"
 #include "dac.h"
 #include "tim.h"
@@ -238,6 +240,7 @@ void ControlTask(void *argument)
 * @param argument: Not used
 * @retval None
 */
+int8_t ble_mode = 0;
 /* USER CODE END Header_CommTask */
 void CommTask(void *argument)
 {
@@ -247,6 +250,12 @@ void CommTask(void *argument)
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
   init_usb_data();
+
+//  int32_t telemetry[2];
+//  uint16_t counter = 0;
+//  telemetry[0] = 500;
+//  MX_BlueNRG_2_Init();
+//  ble_set_connectable();
 
   /* Infinite loop */
   for(;;)
@@ -262,6 +271,21 @@ void CommTask(void *argument)
     set_usb_mode(get_usb_mode());
     update_usb_timestamp();
     load_usb_tx_data();
+
+
+//    osDelay(1);
+//    MX_BlueNRG_2_Process(xTaskGetTickCount());
+//    vTaskDelay(pdMS_TO_TICKS(5));
+//
+//    ble_mode = get_ble_data8(0);
+//
+//    // set telemetry data
+//    telemetry[0] = get_ble_data16(1);
+//    FLOAT_BITS(telemetry[1]) = (1.0F/4095.0F)*counter;
+//    set_ble_data(telemetry, 2);
+//
+//    ++counter;
+//    counter &= 0xFFF;
   }
   /* USER CODE END CommTask */
 }
