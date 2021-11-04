@@ -27,14 +27,15 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "definitions.h"
+#include "math.h"
+#include "state_space.h"
+#include "system.h"
 #include "usb_hid_api.h"
 #include "app_bluenrg_2.h"
 #include "gatt_db.h"
-#include "dsp.h"
 #include "adc.h"
 #include "dac.h"
 #include "tim.h"
-#include "motor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,7 +57,8 @@
 /* USER CODE BEGIN Variables */
 extern uint32_t g_adc_buffer[3];
 extern uint32_t g_adc2_buffer[3];
-TRAP_DRIVE motor;
+uint16_t g_kill_switch = FALSE;
+SYSTEM S;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -106,8 +108,8 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-  init_trap_drive(&motor, &htim1, &htim2, 1);
-  init_encoder(&motor.encoder, &htim8);
+  init_trap_drive(&S.motor, &htim1, &htim2, 1);
+  init_encoder(&S.motor.encoder, &htim8);
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -195,8 +197,6 @@ void LedTask(void *argument)
 }
 
 /* USER CODE BEGIN Header_ControlTask */
-uint16_t g_encoder = 0;
-uint16_t g_dac = 0;
 /**
 * @brief Function implementing the controlTask thread.
 * @param argument: Not used
@@ -206,26 +206,84 @@ uint16_t g_dac = 0;
 void ControlTask(void *argument)
 {
   /* USER CODE BEGIN ControlTask */
+  init_rate_limiter(&S.cmd.rate, (4.0F * CTRL_TASK_PERIOD));
   // positive current limit
-  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 4000);
+  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 4094);
   // negative current limit
-  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 0);
+  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1);
   // start timer to trigger ADC conversions
   HAL_TIM_Base_Start_IT(&htim3);
-
-  enable_trap_drive(&motor, TRUE);
+  S.motor.encoder.gain = (2*PI)/(S.motor.encoder.tim->Init.Period + 1);
+  S.motor.encoder.offset = -7290;
+  init_observer(&S.observer);
+  S.cmd.scale = (PI / 6) * 0.001F;
+  S.observer.K[0] = 5.3908;
+  S.observer.K[1] = 0.3758;
+  S.observer.K[2] = 0.0103;
 
   /* Infinite loop */
   for(;;)
   {
-    vTaskDelay(pdMS_TO_TICKS(10));
-    update_encoder_position(&motor.encoder);
+    vTaskDelay(pdMS_TO_TICKS(CTRL_TASK_PERIOD));
+    update_encoder_position(&S.motor.encoder);
+    update_hall_velocity(&S.motor.hall, VELOCITY_GAIN);
+    S.cmd.out = S.cmd.scale * S.cmd.raw;
 
-    update_pwm_cmd(&motor, 1500);
-//    update_hall_velocity(&motor, VELOCITY_GAIN);
+    switch(S.mode) {
+
+    case(IDLE_MODE):
+      S.observer.ss.x[0] = S.motor.encoder.out;
+      S.observer.ss.x[1] = 0;
+      S.observer.ss.x[2] = 0;
+      g_kill_switch = FALSE;
+
+      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
+      enable_trap_drive(&S.motor, FALSE);
+      set_usb_tx_mode(IDLE_MODE);
+      break;
+
+    case(RUN_MODE):
+      if(fabs(S.motor.encoder.out) > S.observer.ss.x_limit[0]) {
+        g_kill_switch = TRUE;
+      }
+
+      if(g_kill_switch) {
+        enable_trap_drive(&S.motor, FALSE);
+        set_usb_tx_mode(IDLE_MODE);
+      }
+      else {
+        update_control_effort(&S.observer, S.cmd.out);
+        update_observer(&S.observer, S.motor.encoder.out);
+        S.pwm_cmd = (S.observer.u / INPUT_VOLTAGE) * 1.5F;
+        S.pwm_cmd = LIMIT(S.pwm_cmd, 0.25, -0.25);
+
+        update_pwm_cmd(&S.motor, S.pwm_cmd);
+        enable_trap_drive(&S.motor, TRUE);
+        set_usb_tx_mode(RUN_MODE);
+      }
+
+//      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
+//      enable_trap_drive(&S.motor, TRUE);
+//      set_usb_tx_mode(RUN_MODE);
+      break;
+
+    case(CAL_MODE):
+      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
+      if(update_trap_cal(&S.motor)) {
+        set_usb_tx_mode(NULL_MODE);
+      }
+      else {
+        set_usb_tx_mode(CAL_MODE);
+      }
+      break;
+
+    default:
+  	  enable_trap_drive(&S.motor, FALSE);
+  	  set_usb_tx_mode(S.mode);
+      break;
+    }
 
 //    HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&g_adc2_buffer, ARRAY_SIZE(g_adc2_buffer));
-//
 //    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, g_dac);
 //    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_2, DAC_ALIGN_12B_R, (4095 - g_dac));
 //    g_dac++;
@@ -240,20 +298,15 @@ void ControlTask(void *argument)
 * @param argument: Not used
 * @retval None
 */
-int8_t ble_mode = 0;
 /* USER CODE END Header_CommTask */
 void CommTask(void *argument)
 {
   /* USER CODE BEGIN CommTask */
-  int32_t milliseconds = 0;
-  float sine_scale = 0;
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
   init_usb_data();
 
 //  int32_t telemetry[2];
-//  uint16_t counter = 0;
-//  telemetry[0] = 500;
 //  MX_BlueNRG_2_Init();
 //  ble_set_connectable();
 
@@ -261,31 +314,38 @@ void CommTask(void *argument)
   for(;;)
   {
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
-    sine_scale = sinf(M_PI * (2 * 0.001) * milliseconds ) * 1000;
-    if(++milliseconds >= 1000) milliseconds = 0;
     // load telemetry feedback
-    set_usb_data32(0, get_usb_data32(0));
-    set_usb_data32(1, sine_scale);
-    set_usb_data32(2, milliseconds);
+    S.cmd.raw = get_usb_data32(0);
+    S.mode = get_usb_rx_mode();
 
-    set_usb_mode(get_usb_mode());
+    set_usb_data32(0, FLOAT_TO_INT_BITS(S.cmd.out));
+    set_usb_data32(1, FLOAT_TO_INT_BITS(S.observer.u));
+    set_usb_data32(2, g_kill_switch);
+    set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
+    set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
+    set_usb_data32(5, FLOAT_TO_INT_BITS(S.observer.ss.x[0]));
+    set_usb_data32(6, FLOAT_TO_INT_BITS(S.observer.ss.x[1]));
+    set_usb_data32(7, FLOAT_TO_INT_BITS(S.observer.ss.x[2]));
+    set_usb_data32(8, FLOAT_TO_INT_BITS(S.observer.error));
+    set_usb_data32(9, g_adc_buffer[0]);
+    set_usb_data32(10, g_adc_buffer[1]);
+    set_usb_data32(11, g_adc_buffer[2]);
+
     update_usb_timestamp();
     load_usb_tx_data();
 
 
-//    osDelay(1);
+//    vTaskDelay(pdMS_TO_TICKS(1));
 //    MX_BlueNRG_2_Process(xTaskGetTickCount());
 //    vTaskDelay(pdMS_TO_TICKS(5));
 //
-//    ble_mode = get_ble_data8(0);
+//    S.mode = get_ble_data8(0);
+//    S.cmd.raw = get_ble_data16(1);
 //
 //    // set telemetry data
-//    telemetry[0] = get_ble_data16(1);
-//    FLOAT_BITS(telemetry[1]) = (1.0F/4095.0F)*counter;
+//    telemetry[0] = S.cmd.raw;
+//    INT_TO_FLOAT_BITS(telemetry[1]) = S.motor.encoder.out;
 //    set_ble_data(telemetry, 2);
-//
-//    ++counter;
-//    counter &= 0xFFF;
   }
   /* USER CODE END CommTask */
 }
@@ -300,8 +360,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  update_hall_state(&motor.hall);
-  update_state_cmd(&motor);
+  update_hall_state(&S.motor.hall);
+  update_state_cmd(&S.motor);
 }
 /* USER CODE END Application */
 

@@ -6,31 +6,36 @@
  */
 
 #include "usb_hid_api.h"
-
+#include "../Inc/dsp.h"
 #include <string.h>
 
 volatile uint8_t g_ping_pong_flag = 0;
 uint8_t g_timestamp = 0;
-uint8_t g_usb_rx_bytes[NUM_BYTES];
-uint8_t g_usb_tx_bytes_0[NUM_BYTES];
-uint8_t g_usb_tx_bytes_1[NUM_BYTES];
+uint8_t g_usb_rx_bytes[NUM_USB_BYTES];
+uint8_t g_usb_tx_bytes_0[NUM_USB_BYTES];
+uint8_t g_usb_tx_bytes_1[NUM_USB_BYTES];
 
 void init_usb_data(void)
 {
   uint8_t i = 0;
-  for(i = 0; i < NUM_BYTES; i++) {
+  for(i = 0; i < NUM_USB_BYTES; i++) {
     g_usb_rx_bytes[i] = 0;
     g_usb_tx_bytes_0[i] = 0;
     g_usb_tx_bytes_1[i] = 0;
   }
 }
 
-uint8_t get_usb_mode(void)
+uint8_t get_usb_rx_mode(void)
 {
   return g_usb_rx_bytes[COMMAND_MODE_INDEX];
 }
 
-void set_usb_mode(uint8_t mode)
+uint8_t get_usb_tx_mode(void)
+{
+  return g_usb_tx_bytes_0[COMMAND_MODE_INDEX];
+}
+
+void set_usb_tx_mode(uint8_t mode)
 {
   g_usb_tx_bytes_0[COMMAND_MODE_INDEX] = mode;
   g_usb_tx_bytes_1[COMMAND_MODE_INDEX] = mode;
@@ -63,7 +68,7 @@ void set_usb_data32(uint8_t index, int32_t value)
 
 void load_usb_rx_data(uint8_t *data)
 {
-  memcpy(g_usb_rx_bytes, data, NUM_BYTES);
+  memcpy(g_usb_rx_bytes, data, NUM_USB_BYTES);
 }
 
 void load_usb_tx_data(void)
