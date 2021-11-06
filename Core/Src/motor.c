@@ -158,6 +158,40 @@ void update_state_cmd(TRAP_DRIVE *trap_drive)
   }
 }
 
+void update_current(TRAP_DRIVE *trap_drive, float phase_a, float phase_b)
+{
+  switch(trap_drive->cmd_state) {
+
+  case(1):
+    trap_drive->current = CURRENT_SCALE(phase_a);
+    break;
+
+  case(2):
+    trap_drive->current = CURRENT_SCALE(phase_a);
+    break;
+
+  case(3):
+    trap_drive->current = CURRENT_SCALE(phase_b);
+    break;
+
+  case(4):
+    trap_drive->current = CURRENT_SCALE(phase_b);
+    break;
+
+  case(5):
+    trap_drive->current = -CURRENT_SCALE(phase_a);
+    break;
+
+  case(6):
+    trap_drive->current = -CURRENT_SCALE(phase_b);
+    break;
+
+  default:
+    trap_drive->current =  CURRENT_SCALE(phase_a);
+    break;
+  }
+}
+
 int32_t update_trap_cal(TRAP_DRIVE *trap_drive)
 {
   static PERSISTENCE persistence = {.threshold = 500, .latch = FALSE};
@@ -325,4 +359,12 @@ void update_encoder_position(ENCODER *encoder)
   }
   encoder->position -= ((encoder->tim->Init.Period + 1) >> 1);
   encoder->out = encoder->gain * encoder->position;
+}
+
+float scale_voltage_command(float u)
+{
+  float pwm;
+  pwm = (u / INPUT_VOLTAGE) * 1.0F;
+  pwm = LIMIT(pwm, 0.25, -0.25);
+  return pwm;
 }

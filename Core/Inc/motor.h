@@ -77,6 +77,8 @@ typedef struct {
   uint16_t compare;
   int16_t cmd_state;
   int16_t cal_state;
+
+  float current;
 } TRAP_DRIVE;
 
 void init_trap_drive(TRAP_DRIVE *trap_drive, TIM_HandleTypeDef *pwm_tim, TIM_HandleTypeDef *hall_tim, int32_t direction);
@@ -84,9 +86,11 @@ void init_encoder(ENCODER *encoder, TIM_HandleTypeDef *encoder_tim);
 void enable_trap_drive(TRAP_DRIVE *trap_drive, uint8_t enable);
 void update_state_cmd(TRAP_DRIVE *trap_drive);
 void update_pwm_cmd(TRAP_DRIVE *trap_drive, float command);
+void update_current(TRAP_DRIVE *trap_drive, float phase_a, float phase_b);
 int32_t update_trap_cal(TRAP_DRIVE *trap_drive);
 void update_hall_state(HALL_SENSORS *hall);
 void update_hall_velocity(HALL_SENSORS *hall, float gain);
 void update_encoder_position(ENCODER *encoder);
+float scale_voltage_command(float u);
 
 #endif /* INC_MOTOR_H_ */

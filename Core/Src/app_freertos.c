@@ -208,18 +208,26 @@ void ControlTask(void *argument)
   /* USER CODE BEGIN ControlTask */
   init_rate_limiter(&S.cmd.rate, (4.0F * CTRL_TASK_PERIOD));
   // positive current limit
-  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 4094);
+  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 4095);
   // negative current limit
   HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1);
   // start timer to trigger ADC conversions
   HAL_TIM_Base_Start_IT(&htim3);
   S.motor.encoder.gain = (2*PI)/(S.motor.encoder.tim->Init.Period + 1);
   S.motor.encoder.offset = -7290;
-  init_observer(&S.observer);
+  init_observer(&S.controller.obs);
+
+  // add tracking gain term
   S.cmd.scale = (PI / 6) * 0.001F;
-  S.observer.K[0] = 5.3908;
-  S.observer.K[1] = 0.3758;
-  S.observer.K[2] = 0.0103;
+  S.controller.tracking_gain = 10.1647;
+  S.controller.K[0] = 12.0744;
+  S.controller.K[1] = 0.7060;
+  S.controller.K[2] = 0.0192;
+
+//  S.controller.tracking_gain = 1.8222;
+//  S.controller.K[0] = 3.6788;
+//  S.controller.K[1] = 0.2728;
+//  S.controller.K[2] = 0.0075;
 
   /* Infinite loop */
   for(;;)
@@ -232,18 +240,18 @@ void ControlTask(void *argument)
     switch(S.mode) {
 
     case(IDLE_MODE):
-      S.observer.ss.x[0] = S.motor.encoder.out;
-      S.observer.ss.x[1] = 0;
-      S.observer.ss.x[2] = 0;
+      S.controller.obs.ss.x[0] = S.motor.encoder.out;
+      S.controller.obs.ss.x[1] = 0;
+      S.controller.obs.ss.x[2] = 0;
       g_kill_switch = FALSE;
 
-      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
+//      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
       enable_trap_drive(&S.motor, FALSE);
       set_usb_tx_mode(IDLE_MODE);
       break;
 
     case(RUN_MODE):
-      if(fabs(S.motor.encoder.out) > S.observer.ss.x_limit[0]) {
+      if(fabs(S.motor.encoder.out) > S.controller.obs.ss.x_limit[0]) {
         g_kill_switch = TRUE;
       }
 
@@ -252,10 +260,9 @@ void ControlTask(void *argument)
         set_usb_tx_mode(IDLE_MODE);
       }
       else {
-        update_control_effort(&S.observer, S.cmd.out);
-        update_observer(&S.observer, S.motor.encoder.out);
-        S.pwm_cmd = (S.observer.u / INPUT_VOLTAGE) * 1.5F;
-        S.pwm_cmd = LIMIT(S.pwm_cmd, 0.25, -0.25);
+        update_control_effort(&S.controller, S.cmd.out);
+        update_observer(&S.controller.obs, S.motor.encoder.out, S.controller.u);
+        S.pwm_cmd = scale_voltage_command(S.controller.u);
 
         update_pwm_cmd(&S.motor, S.pwm_cmd);
         enable_trap_drive(&S.motor, TRUE);
@@ -283,11 +290,7 @@ void ControlTask(void *argument)
       break;
     }
 
-//    HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&g_adc2_buffer, ARRAY_SIZE(g_adc2_buffer));
-//    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, g_dac);
-//    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_2, DAC_ALIGN_12B_R, (4095 - g_dac));
-//    g_dac++;
-//    g_dac &= 0xFFF;
+    HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&g_adc2_buffer, ARRAY_SIZE(g_adc2_buffer));
   }
   /* USER CODE END ControlTask */
 }
@@ -302,50 +305,54 @@ void ControlTask(void *argument)
 void CommTask(void *argument)
 {
   /* USER CODE BEGIN CommTask */
-  TickType_t xLastWakeTime;
-  xLastWakeTime = xTaskGetTickCount();
-  init_usb_data();
+//  TickType_t xLastWakeTime;
+//  xLastWakeTime = xTaskGetTickCount();
+//  init_usb_data();
 
-//  int32_t telemetry[2];
-//  MX_BlueNRG_2_Init();
-//  ble_set_connectable();
+  int32_t telemetry[2];
+  MX_BlueNRG_2_Init();
+  ble_set_connectable();
 
   /* Infinite loop */
   for(;;)
   {
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
-    // load telemetry feedback
-    S.cmd.raw = get_usb_data32(0);
-    S.mode = get_usb_rx_mode();
-
-    set_usb_data32(0, FLOAT_TO_INT_BITS(S.cmd.out));
-    set_usb_data32(1, FLOAT_TO_INT_BITS(S.observer.u));
-    set_usb_data32(2, g_kill_switch);
-    set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
-    set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
-    set_usb_data32(5, FLOAT_TO_INT_BITS(S.observer.ss.x[0]));
-    set_usb_data32(6, FLOAT_TO_INT_BITS(S.observer.ss.x[1]));
-    set_usb_data32(7, FLOAT_TO_INT_BITS(S.observer.ss.x[2]));
-    set_usb_data32(8, FLOAT_TO_INT_BITS(S.observer.error));
-    set_usb_data32(9, g_adc_buffer[0]);
-    set_usb_data32(10, g_adc_buffer[1]);
-    set_usb_data32(11, g_adc_buffer[2]);
-
-    update_usb_timestamp();
-    load_usb_tx_data();
-
-
-//    vTaskDelay(pdMS_TO_TICKS(1));
-//    MX_BlueNRG_2_Process(xTaskGetTickCount());
-//    vTaskDelay(pdMS_TO_TICKS(5));
+//    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
+//    // load telemetry feedback
+//    S.cmd.raw = get_usb_data32(0);
+//    S.mode = get_usb_rx_mode();
 //
-//    S.mode = get_ble_data8(0);
-//    S.cmd.raw = get_ble_data16(1);
+//    update_current(&S.motor, g_adc_buffer[0], g_adc_buffer[1]);
 //
-//    // set telemetry data
-//    telemetry[0] = S.cmd.raw;
-//    INT_TO_FLOAT_BITS(telemetry[1]) = S.motor.encoder.out;
-//    set_ble_data(telemetry, 2);
+//    set_usb_data32(0, FLOAT_TO_INT_BITS(S.cmd.out));
+//    set_usb_data32(1, FLOAT_TO_INT_BITS(S.controller.u));
+//    set_usb_data32(2, FLOAT_TO_INT_BITS(S.controller.r));
+//    set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
+//    set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
+//    set_usb_data32(5, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[0]));
+//    set_usb_data32(6, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[1]));
+//    set_usb_data32(7, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[2]));
+//    set_usb_data32(8, FLOAT_TO_INT_BITS(S.controller.obs.error));
+//    set_usb_data32(9, g_adc_buffer[0]);
+//    set_usb_data32(10, g_adc_buffer[1]);
+//    set_usb_data32(11, FLOAT_TO_INT_BITS(S.motor.current));
+//    set_usb_data32(12, S.motor.cmd_state);
+//    set_usb_data32(13, S.motor.hall.state);
+//
+//    update_usb_timestamp();
+//    load_usb_tx_data();
+
+
+    vTaskDelay(pdMS_TO_TICKS(1));
+    MX_BlueNRG_2_Process(xTaskGetTickCount());
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    S.mode = get_ble_data8(0);
+    S.cmd.raw = get_ble_data16(1);
+
+    // set telemetry data
+    telemetry[0] = S.cmd.raw;
+    INT_TO_FLOAT_BITS(telemetry[1]) = S.motor.encoder.out;
+    set_ble_data(telemetry, 2);
   }
   /* USER CODE END CommTask */
 }

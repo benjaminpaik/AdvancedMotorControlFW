@@ -24,7 +24,7 @@ typedef struct {
   COMMAND cmd;
   float pwm_cmd;
   TRAP_DRIVE motor;
-  STATE_OBSERVER observer;
+  STATE_CONTROLLER controller;
 } SYSTEM;
 
 #endif /* INC_SYSTEM_H_ */

@@ -30,5 +30,6 @@
 #define TIMER_CLOCK_FREQ  (144000000.0F)
 #define STATES_PER_REV    (24)
 #define VELOCITY_GAIN     (TIMER_CLOCK_FREQ * (60.0F / STATES_PER_REV))
+#define CURRENT_SCALE(X)  (((12.5F / 2047.5F) * (X)) - 12.5F)
 
 #endif /* INC_DEFINITIONS_H_ */
