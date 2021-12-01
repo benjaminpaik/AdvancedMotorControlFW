@@ -305,54 +305,54 @@ void ControlTask(void *argument)
 void CommTask(void *argument)
 {
   /* USER CODE BEGIN CommTask */
-//  TickType_t xLastWakeTime;
-//  xLastWakeTime = xTaskGetTickCount();
-//  init_usb_data();
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+  init_usb_data();
 
-  int32_t telemetry[2];
-  MX_BlueNRG_2_Init();
-  ble_set_connectable();
+//  int32_t telemetry[2];
+//  MX_BlueNRG_2_Init();
+//  ble_set_connectable();
 
   /* Infinite loop */
   for(;;)
   {
-//    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
-//    // load telemetry feedback
-//    S.cmd.raw = get_usb_data32(0);
-//    S.mode = get_usb_rx_mode();
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
+    // load telemetry feedback
+    S.cmd.raw = get_usb_data32(0);
+    S.mode = get_usb_rx_mode();
+
+    update_current(&S.motor, g_adc_buffer[0], g_adc_buffer[1]);
+
+    set_usb_data32(0, FLOAT_TO_INT_BITS(S.cmd.out));
+    set_usb_data32(1, FLOAT_TO_INT_BITS(S.controller.u));
+    set_usb_data32(2, FLOAT_TO_INT_BITS(S.controller.r));
+    set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
+    set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
+    set_usb_data32(5, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[0]));
+    set_usb_data32(6, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[1]));
+    set_usb_data32(7, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[2]));
+    set_usb_data32(8, FLOAT_TO_INT_BITS(S.controller.obs.error));
+    set_usb_data32(9, g_adc_buffer[0]);
+    set_usb_data32(10, g_adc_buffer[1]);
+    set_usb_data32(11, FLOAT_TO_INT_BITS(S.motor.current));
+    set_usb_data32(12, S.motor.cmd_state);
+    set_usb_data32(13, S.motor.hall.state);
+
+    update_usb_timestamp();
+    load_usb_tx_data();
+
+
+//    vTaskDelay(pdMS_TO_TICKS(1));
+//    MX_BlueNRG_2_Process(xTaskGetTickCount());
+//    vTaskDelay(pdMS_TO_TICKS(5));
 //
-//    update_current(&S.motor, g_adc_buffer[0], g_adc_buffer[1]);
+//    S.mode = get_ble_data8(0);
+//    S.cmd.raw = get_ble_data16(1);
 //
-//    set_usb_data32(0, FLOAT_TO_INT_BITS(S.cmd.out));
-//    set_usb_data32(1, FLOAT_TO_INT_BITS(S.controller.u));
-//    set_usb_data32(2, FLOAT_TO_INT_BITS(S.controller.r));
-//    set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
-//    set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
-//    set_usb_data32(5, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[0]));
-//    set_usb_data32(6, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[1]));
-//    set_usb_data32(7, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[2]));
-//    set_usb_data32(8, FLOAT_TO_INT_BITS(S.controller.obs.error));
-//    set_usb_data32(9, g_adc_buffer[0]);
-//    set_usb_data32(10, g_adc_buffer[1]);
-//    set_usb_data32(11, FLOAT_TO_INT_BITS(S.motor.current));
-//    set_usb_data32(12, S.motor.cmd_state);
-//    set_usb_data32(13, S.motor.hall.state);
-//
-//    update_usb_timestamp();
-//    load_usb_tx_data();
-
-
-    vTaskDelay(pdMS_TO_TICKS(1));
-    MX_BlueNRG_2_Process(xTaskGetTickCount());
-    vTaskDelay(pdMS_TO_TICKS(5));
-
-    S.mode = get_ble_data8(0);
-    S.cmd.raw = get_ble_data16(1);
-
-    // set telemetry data
-    telemetry[0] = S.cmd.raw;
-    INT_TO_FLOAT_BITS(telemetry[1]) = S.motor.encoder.out;
-    set_ble_data(telemetry, 2);
+//    // set telemetry data
+//    telemetry[0] = S.cmd.raw;
+//    INT_TO_FLOAT_BITS(telemetry[1]) = S.motor.encoder.out;
+//    set_ble_data(telemetry, 2);
   }
   /* USER CODE END CommTask */
 }
