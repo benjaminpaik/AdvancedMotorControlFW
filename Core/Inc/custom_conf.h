@@ -1,10 +1,21 @@
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : custom_conf.h
   * @brief          : Configuration file
   ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2021 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
   ******************************************************************************
 */
+/* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef CUSTOM_CONF_H
@@ -38,7 +49,7 @@
 #define USE_COM_LOG                         1U
 
 /* IRQ priorities */
-#define BSP_BUTTON_USER_IT_PRIORITY         15U
+#define BSP_BUTTON_USER_IT_PRIORITY         14U
 
 /* I2C1 Frequeny in Hz  */
 #define BUS_I2C1_FREQUENCY                  100000U /* Frequency of I2C1 = 100 KHz*/
@@ -70,4 +81,3 @@
 #endif
 #endif  /* CUSTOM_CONF_H */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

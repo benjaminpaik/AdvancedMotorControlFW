@@ -142,4 +142,3 @@ extern USBD_DescriptorsTypeDef     CUSTOM_HID_Desc;
 
 #endif /* __USBD_DESC__C__ */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
