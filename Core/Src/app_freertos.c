@@ -187,11 +187,11 @@ void LedTask(void *argument)
   {
     HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(250));
 
     HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(250));
   }
   /* USER CODE END LedTask */
 }
@@ -206,7 +206,6 @@ void LedTask(void *argument)
 void ControlTask(void *argument)
 {
   /* USER CODE BEGIN ControlTask */
-  init_rate_limiter(&S.cmd.rate, (4.0F * CTRL_TASK_PERIOD));
   // positive current limit
   HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 4095);
   // negative current limit
@@ -224,11 +223,6 @@ void ControlTask(void *argument)
   S.controller.K[1] = 0.7060;
   S.controller.K[2] = 0.0192;
 
-//  S.controller.tracking_gain = 1.8222;
-//  S.controller.K[0] = 3.6788;
-//  S.controller.K[1] = 0.2728;
-//  S.controller.K[2] = 0.0075;
-
   /* Infinite loop */
   for(;;)
   {
@@ -240,42 +234,42 @@ void ControlTask(void *argument)
     switch(S.mode) {
 
     case(IDLE_MODE):
-      S.controller.obs.ss.x[0] = S.motor.encoder.out;
-      S.controller.obs.ss.x[1] = 0;
-      S.controller.obs.ss.x[2] = 0;
-      g_kill_switch = FALSE;
+//      S.controller.obs.ss.x[0] = S.motor.encoder.out;
+//      S.controller.obs.ss.x[1] = 0;
+//      S.controller.obs.ss.x[2] = 0;
+//      g_kill_switch = FALSE;
 
-//      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
+      update_pwm_cmd(&S.motor, (0.001F * S.cmd.raw));
       enable_trap_drive(&S.motor, FALSE);
       set_usb_tx_mode(IDLE_MODE);
       break;
 
     case(RUN_MODE):
-      if(fabs(S.motor.encoder.out) > S.controller.obs.ss.x_limit[0]) {
-        g_kill_switch = TRUE;
-      }
+//      if(fabs(S.motor.encoder.out) > S.controller.obs.ss.x_limit[0]) {
+//        g_kill_switch = TRUE;
+//      }
+//
+//      if(g_kill_switch) {
+//        enable_trap_drive(&S.motor, FALSE);
+//        set_usb_tx_mode(IDLE_MODE);
+//      }
+//      else {
+//        update_control_effort(&S.controller, S.cmd.out);
+//        update_observer(&S.controller.obs, S.motor.encoder.out, S.controller.u);
+//        S.pwm_cmd = scale_voltage_command(S.controller.u);
+//
+//        update_pwm_cmd(&S.motor, S.pwm_cmd);
+//        enable_trap_drive(&S.motor, TRUE);
+//        set_usb_tx_mode(RUN_MODE);
+//      }
 
-      if(g_kill_switch) {
-        enable_trap_drive(&S.motor, FALSE);
-        set_usb_tx_mode(IDLE_MODE);
-      }
-      else {
-        update_control_effort(&S.controller, S.cmd.out);
-        update_observer(&S.controller.obs, S.motor.encoder.out, S.controller.u);
-        S.pwm_cmd = scale_voltage_command(S.controller.u);
-
-        update_pwm_cmd(&S.motor, S.pwm_cmd);
-        enable_trap_drive(&S.motor, TRUE);
-        set_usb_tx_mode(RUN_MODE);
-      }
-
-//      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
-//      enable_trap_drive(&S.motor, TRUE);
-//      set_usb_tx_mode(RUN_MODE);
+      update_pwm_cmd(&S.motor, (0.001F * S.cmd.raw));
+      enable_trap_drive(&S.motor, TRUE);
+      set_usb_tx_mode(RUN_MODE);
       break;
 
     case(CAL_MODE):
-      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
+      update_pwm_cmd(&S.motor, (0.001F * S.cmd.raw));
       if(update_trap_cal(&S.motor)) {
         set_usb_tx_mode(NULL_MODE);
       }

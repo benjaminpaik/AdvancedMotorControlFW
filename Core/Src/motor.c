@@ -364,7 +364,7 @@ void update_encoder_position(ENCODER *encoder)
 float scale_voltage_command(float u)
 {
   float pwm;
-  pwm = (u / INPUT_VOLTAGE) * 1.0F;
+  pwm = (u / INPUT_VOLTAGE) * 1.2F;
   pwm = LIMIT(pwm, 0.25, -0.25);
   return pwm;
 }

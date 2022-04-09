@@ -33,8 +33,11 @@ extern "C" {
 /* USER CODE END Includes */
 
 extern COMP_HandleTypeDef hcomp1;
+
 extern COMP_HandleTypeDef hcomp2;
+
 extern COMP_HandleTypeDef hcomp3;
+
 extern COMP_HandleTypeDef hcomp4;
 
 /* USER CODE BEGIN Private defines */

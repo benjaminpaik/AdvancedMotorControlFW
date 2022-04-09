@@ -40,6 +40,7 @@ void MX_DAC1_Init(void)
   /* USER CODE BEGIN DAC1_Init 1 */
 
   /* USER CODE END DAC1_Init 1 */
+
   /** DAC Initialization
   */
   hdac1.Instance = DAC1;
@@ -47,6 +48,7 @@ void MX_DAC1_Init(void)
   {
     Error_Handler();
   }
+
   /** DAC channel OUT1 config
   */
   sConfig.DAC_HighFrequency = DAC_HIGH_FREQUENCY_INTERFACE_MODE_AUTOMATIC;
@@ -62,6 +64,7 @@ void MX_DAC1_Init(void)
   {
     Error_Handler();
   }
+
   /** DAC channel OUT2 config
   */
   if (HAL_DAC_ConfigChannel(&hdac1, &sConfig, DAC_CHANNEL_2) != HAL_OK)
@@ -86,6 +89,7 @@ void MX_DAC3_Init(void)
   /* USER CODE BEGIN DAC3_Init 1 */
 
   /* USER CODE END DAC3_Init 1 */
+
   /** DAC Initialization
   */
   hdac3.Instance = DAC3;
@@ -93,6 +97,7 @@ void MX_DAC3_Init(void)
   {
     Error_Handler();
   }
+
   /** DAC channel OUT1 config
   */
   sConfig.DAC_HighFrequency = DAC_HIGH_FREQUENCY_INTERFACE_MODE_AUTOMATIC;
@@ -108,6 +113,7 @@ void MX_DAC3_Init(void)
   {
     Error_Handler();
   }
+
   /** DAC channel OUT2 config
   */
   if (HAL_DAC_ConfigChannel(&hdac3, &sConfig, DAC_CHANNEL_2) != HAL_OK)

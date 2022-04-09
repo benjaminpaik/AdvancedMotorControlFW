@@ -15,7 +15,6 @@
 typedef struct {
   float scale;
   int32_t raw;
-  RATE_LIMIT rate;
   float out;
 } COMMAND;
 

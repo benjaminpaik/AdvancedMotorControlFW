@@ -33,6 +33,7 @@ extern "C" {
 /* USER CODE END Includes */
 
 extern DAC_HandleTypeDef hdac1;
+
 extern DAC_HandleTypeDef hdac3;
 
 /* USER CODE BEGIN Private defines */
