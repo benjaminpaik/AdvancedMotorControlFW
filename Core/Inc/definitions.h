@@ -21,10 +21,13 @@
 #define CTRL_TASK_PERIOD    10
 #define COMM_TASK_PERIOD    1
 
-#define NULL_MODE 0
-#define IDLE_MODE	1
-#define RUN_MODE	2
-#define CAL_MODE	3
+#define NULL_MODE       0
+#define IDLE_MODE       1
+#define RUN_MODE        2
+#define CAL_MODE        3
+#define READ_MODE       253
+#define WRITE_MODE      254
+#define FLASH_MODE      255
 
 #define ARRAY_SIZE(X)     (sizeof(X) / sizeof(X[0]))
 #define TIMER_CLOCK_FREQ  (144000000.0F)

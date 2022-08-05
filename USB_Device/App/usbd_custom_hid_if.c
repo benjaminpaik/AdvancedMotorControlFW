@@ -194,7 +194,7 @@ static int8_t CUSTOM_HID_DeInit_FS(void)
 static int8_t CUSTOM_HID_OutEvent_FS(uint8_t *state)
 {
   /* USER CODE BEGIN 6 */
-  load_usb_rx_data(state);
+  load_usb_rx_bytes(state);
   USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, get_usb_tx_buffer(), NUM_USB_BYTES);
   // start next USB packet transfer once data processing is completed
   USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);

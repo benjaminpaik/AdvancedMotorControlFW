@@ -40,7 +40,7 @@ MEMORY
   FLASH_BOOT (rx)         : ORIGIN = 0x8000000,
                             LENGTH = 4k
   EMULATED_EEPROM (rwx)   : ORIGIN = ORIGIN(FLASH_BOOT) + LENGTH(FLASH_BOOT), 
-                            LENGTH = 4k
+                            LENGTH = 8k
   FLASH (rx)              : ORIGIN = ORIGIN(EMULATED_EEPROM) + LENGTH(EMULATED_EEPROM),
                             LENGTH = 128k - LENGTH(FLASH_BOOT) - LENGTH(EMULATED_EEPROM)
 }
