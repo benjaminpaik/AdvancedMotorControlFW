@@ -19,7 +19,9 @@ typedef struct {
 } COMMAND;
 
 typedef struct {
+  uint8_t int_flash_flag;
   uint8_t mode;
+  uint8_t mode_previous;
   COMMAND cmd;
   float pwm_cmd;
   TRAP_DRIVE motor;

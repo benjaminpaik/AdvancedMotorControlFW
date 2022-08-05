@@ -27,6 +27,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "definitions.h"
+#include "parameters.h"
+#include "parameter_functions.h"
 #include "math.h"
 #include "state_space.h"
 #include "system.h"
@@ -36,6 +38,7 @@
 #include "adc.h"
 #include "dac.h"
 #include "tim.h"
+#include "eeprom_emul.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,6 +62,7 @@ extern uint32_t g_adc_buffer[3];
 extern uint32_t g_adc2_buffer[3];
 uint16_t g_kill_switch = FALSE;
 SYSTEM S;
+PARAMETER P;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -91,7 +95,9 @@ const osThreadAttr_t commTask_attributes = {
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-
+void host_processor(void);
+void implement_parameters(void);
+void load_telemetry(void);
 /* USER CODE END FunctionPrototypes */
 
 void DefaultTask(void *argument);
@@ -307,33 +313,16 @@ void CommTask(void *argument)
 //  MX_BlueNRG_2_Init();
 //  ble_set_connectable();
 
+  S.int_flash_flag = TRUE;
+  // load parameters on startup
+  load_parameters((uint32_t *)P.a, PARAMETER_ARRAY_SIZE);
+
   /* Infinite loop */
   for(;;)
   {
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
-    // load telemetry feedback
-    S.cmd.raw = get_usb_data32(0);
-    S.mode = get_usb_rx_mode();
-
+    host_processor();
     update_current(&S.motor, g_adc_buffer[0], g_adc_buffer[1]);
-
-    set_usb_data32(0, FLOAT_TO_INT_BITS(S.cmd.out));
-    set_usb_data32(1, FLOAT_TO_INT_BITS(S.controller.u));
-    set_usb_data32(2, FLOAT_TO_INT_BITS(S.controller.r));
-    set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
-    set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
-    set_usb_data32(5, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[0]));
-    set_usb_data32(6, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[1]));
-    set_usb_data32(7, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[2]));
-    set_usb_data32(8, FLOAT_TO_INT_BITS(S.controller.obs.error));
-    set_usb_data32(9, g_adc_buffer[0]);
-    set_usb_data32(10, g_adc_buffer[1]);
-    set_usb_data32(11, FLOAT_TO_INT_BITS(S.motor.current));
-    set_usb_data32(12, S.motor.cmd_state);
-    set_usb_data32(13, S.motor.hall.state);
-
-    update_usb_timestamp();
-    load_usb_tx_data();
 
 
 //    vTaskDelay(pdMS_TO_TICKS(1));
@@ -353,6 +342,98 @@ void CommTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+
+void host_processor(void)
+{
+  S.mode_previous = S.mode;
+  S.mode = get_usb_rx_mode();
+
+  if(S.mode_previous == WRITE_MODE && S.mode != WRITE_MODE) {
+    implement_parameters();
+  }
+
+  switch(S.mode) {
+
+  case(IDLE_MODE):
+    S.cmd.raw = get_usb_data32(0);
+    load_telemetry();
+    set_usb_tx_mode(IDLE_MODE);
+    break;
+
+  case(RUN_MODE):
+    S.cmd.raw = get_usb_data32(0);
+    load_telemetry();
+    set_usb_tx_mode(RUN_MODE);
+    break;
+
+  case(CAL_MODE):
+    S.cmd.raw = get_usb_data32(0);
+    // update calibration state step commands
+//    cal_state_step(&S.left, framework.milliseconds);
+    load_telemetry();
+    set_usb_tx_mode(CAL_MODE);
+    break;
+
+  case(WRITE_MODE):
+    write_parameters(P.a, NUM_TELEMETRY_STATES - 1, get_usb_tx_data(), get_usb_rx_data());
+    set_usb_tx_data();
+    set_usb_tx_mode(WRITE_MODE);
+    break;
+
+  case(READ_MODE):
+    read_parameters(P.a, NUM_TELEMETRY_STATES - 1, get_usb_tx_data(), get_usb_rx_data());
+    set_usb_tx_data();
+    set_usb_tx_mode(READ_MODE);
+    break;
+
+  // save parameters in RAM to flash memory
+  case(FLASH_MODE):
+    if(S.int_flash_flag) {
+      S.int_flash_flag = FALSE;
+      flash_parameters((uint32_t *)P.a, PARAMETER_ARRAY_SIZE);
+      set_usb_tx_mode(FLASH_MODE);
+    }
+    break;
+
+  case(NULL_MODE):
+    S.int_flash_flag = TRUE;
+//    framework.status.bit.parameters_updated = FALSE;
+    load_telemetry();
+    set_usb_tx_mode(NULL_MODE);
+    break;
+
+  default:
+    S.cmd.raw = get_usb_data32(0);
+    load_telemetry();
+    break;
+  }
+  update_usb_timestamp();
+  load_usb_tx_bytes();
+}
+
+void implement_parameters(void)
+{
+  P.s.Parameters = PARAMETER_ARRAY_SIZE;
+}
+
+void load_telemetry(void)
+{
+  set_usb_data32(0, FLOAT_TO_INT_BITS(S.cmd.out));
+  set_usb_data32(1, FLOAT_TO_INT_BITS(S.controller.u));
+  set_usb_data32(2, FLOAT_TO_INT_BITS(S.controller.r));
+  set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
+  set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
+  set_usb_data32(5, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[0]));
+  set_usb_data32(6, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[1]));
+  set_usb_data32(7, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[2]));
+  set_usb_data32(8, FLOAT_TO_INT_BITS(S.controller.obs.error));
+  set_usb_data32(9, g_adc_buffer[0]);
+  set_usb_data32(10, g_adc_buffer[1]);
+  set_usb_data32(11, FLOAT_TO_INT_BITS(S.motor.current));
+  set_usb_data32(12, S.motor.cmd_state);
+  set_usb_data32(13, S.motor.hall.state);
+}
+
 volatile uint32_t g_call_count = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {

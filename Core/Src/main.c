@@ -34,6 +34,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "definitions.h"
+#include "eeprom_emul.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -92,7 +93,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  HAL_FLASH_Unlock();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -115,6 +116,10 @@ int main(void)
   MX_USB_Device_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  FLASH->SR |= FLASH_FLAG_SR_ERRORS;
+  if(EE_Init(EE_FORCED_ERASE) != EE_OK) {
+    Error_Handler();
+  }
   while(HAL_ADCEx_Calibration_Start(&hadc1, 1000000) != HAL_OK);
   while(HAL_ADCEx_Calibration_Start(&hadc2, 1000000) != HAL_OK);
   HAL_COMP_Start(&hcomp1);

@@ -26,8 +26,11 @@ void set_usb_tx_mode(uint8_t mode);
 void update_usb_timestamp(void);
 int32_t get_usb_data32(uint8_t index);
 void set_usb_data32(uint8_t index, int32_t value);
-void load_usb_rx_data(uint8_t *data);
-void load_usb_tx_data(void);
+int32_t* get_usb_rx_data();
+int32_t* get_usb_tx_data();
+void set_usb_tx_data();
+void load_usb_rx_bytes(uint8_t *data);
+void load_usb_tx_bytes(void);
 uint8_t* get_usb_tx_buffer(void);
 
 #endif /* USB_HID_API_H_ */
