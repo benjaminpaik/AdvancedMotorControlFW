@@ -60,6 +60,20 @@ defined in linker script */
 	.weak	Reset_Handler
 	.type	Reset_Handler, %function
 Reset_Handler:
+  // load R0 with the RAM end address
+  ldr	r0, =0x20007FF0
+  // load R1 with 0xDEADBEEF
+  ldr	r1, =0xDEADBEEF
+  // load R2 with the value at the RAM end address
+  ldr	r2, [r0, #0]
+  // set the value at the RAM end address to itself to clear 0xDEADBEEF
+  str	r0, [r0, #0]
+  // check if the values in R2 and R1 are equal
+  cmp	r2, r1
+  // call ReprogramMode if the values were equal
+  beq	ReprogramMode
+
+  // normal boot sequence
   ldr   r0, =_estack
   mov   sp, r0          /* set stack pointer */
 
@@ -69,6 +83,25 @@ Reset_Handler:
   ldr r2, =_sidata
   movs r3, #0
   b	LoopCopyDataInit
+
+ReprogramMode:
+  // RCC_APB2ENR
+  ldr	r0, =0x40021060
+  // enable syscfg clock
+  ldr	r1, =0x00004000
+  str	r1, [r0, #0]
+  // SYSCFG_MEMRMP
+  ldr	r0, =0x40010000
+  // MAP ROM AT ZERO
+  ldr	r1, =0x00000001
+  str 	r1,  [r0, #0]
+  // system bootloader
+  ldr	r0, =0x1FFF0000
+  // SP @ +0
+  ldr	sp, [r0, #0]
+  // PC @ +4
+  ldr	r0, [r0, #4]
+  bx	r0
 
 CopyDataInit:
   ldr r4, [r2, r3]

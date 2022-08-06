@@ -98,6 +98,7 @@ const osThreadAttr_t commTask_attributes = {
 void host_processor(void);
 void implement_parameters(void);
 void load_telemetry(void);
+void load_bootloader(void);
 /* USER CODE END FunctionPrototypes */
 
 void DefaultTask(void *argument);
@@ -342,7 +343,6 @@ void CommTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-
 void host_processor(void)
 {
   S.mode_previous = S.mode;
@@ -395,6 +395,16 @@ void host_processor(void)
     }
     break;
 
+  case(BOOT_MODE):
+    if(S.mode_previous != BOOT_MODE) {
+      S.boot_delay_timer = 0;
+    }
+    else if(++S.boot_delay_timer > BOOT_DELAY_TIME) {
+      load_bootloader();
+    }
+    set_usb_tx_mode(BOOT_MODE);
+    break;
+
   case(NULL_MODE):
     S.int_flash_flag = TRUE;
 //    framework.status.bit.parameters_updated = FALSE;
@@ -432,6 +442,30 @@ void load_telemetry(void)
   set_usb_data32(11, FLOAT_TO_INT_BITS(S.motor.current));
   set_usb_data32(12, S.motor.cmd_state);
   set_usb_data32(13, S.motor.hall.state);
+}
+
+void load_bootloader(void)
+{
+//  void (*SysMemBootJump)(void);
+//  // bootloader address
+//  volatile uint32_t addr = 0x1FFF0000;
+//  // disable RCC
+//  HAL_RCC_DeInit();
+//  // disable systick timer
+//  SysTick->CTRL = 0;
+//  SysTick->LOAD = 0;
+//  SysTick->VAL = 0;
+//  // disable interrupts
+//  __disable_irq();
+//  // remap system memory to address 0x00000000
+//  __HAL_SYSCFG_REMAPMEMORY_SYSTEMFLASH();
+//  // specify jump location with 4 byte offset
+//  SysMemBootJump = (void (*)(void)) (*((uint32_t *)(addr + 4)));
+//  // set the main stack pointer
+//  __set_MSP(*(uint32_t *)addr);
+//  SysMemBootJump();
+  *((uint32_t *)RAM_END_ADDRESS) = 0xDEADBEEF;
+  NVIC_SystemReset();
 }
 
 volatile uint32_t g_call_count = 0;
