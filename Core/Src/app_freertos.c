@@ -194,11 +194,11 @@ void LedTask(void *argument)
   {
     HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(250));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
 
     HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(250));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
   }
   /* USER CODE END LedTask */
 }
@@ -446,24 +446,6 @@ void load_telemetry(void)
 
 void load_bootloader(void)
 {
-//  void (*SysMemBootJump)(void);
-//  // bootloader address
-//  volatile uint32_t addr = 0x1FFF0000;
-//  // disable RCC
-//  HAL_RCC_DeInit();
-//  // disable systick timer
-//  SysTick->CTRL = 0;
-//  SysTick->LOAD = 0;
-//  SysTick->VAL = 0;
-//  // disable interrupts
-//  __disable_irq();
-//  // remap system memory to address 0x00000000
-//  __HAL_SYSCFG_REMAPMEMORY_SYSTEMFLASH();
-//  // specify jump location with 4 byte offset
-//  SysMemBootJump = (void (*)(void)) (*((uint32_t *)(addr + 4)));
-//  // set the main stack pointer
-//  __set_MSP(*(uint32_t *)addr);
-//  SysMemBootJump();
   *((uint32_t *)RAM_END_ADDRESS) = 0xDEADBEEF;
   NVIC_SystemReset();
 }
