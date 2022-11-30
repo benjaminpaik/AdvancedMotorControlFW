@@ -121,6 +121,7 @@ void Error_Handler(void);
 #define BLE_SPI_RESET_GPIO_Port GPIOB
 #define ENCODER_Z_Pin GPIO_PIN_6
 #define ENCODER_Z_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
