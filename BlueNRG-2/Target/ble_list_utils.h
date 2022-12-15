@@ -1,13 +1,12 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file
-  * @author  MCD Application Team
-  * @version V2.0.0
+  * @file    Target/ble_list_utils.h
+  * @author  SRA Application Team
+  * @brief   Header file
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2021 STMicroelectronics.
+  * Copyright (c) 2023 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -16,14 +15,19 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
-  /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef  __RTE_COMPONENTS_H__
-#define  __RTE_COMPONENTS_H__
 
-/* Defines ------------------------------------------------------------------*/
-/* STMicroelectronics.X-CUBE-BLE2.3.3.0 */
-#define HCI_TL
-#define HCI_TL_INTERFACE
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef BLE_LIST_UTILS_H
+#define BLE_LIST_UTILS_H
 
-#endif /* __RTE_COMPONENTS_H__ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Includes ------------------------------------------------------------------*/
+#include "stm32g4xx_hal.h"
+
+#ifdef __cplusplus
+}
+#endif
+#endif /* BLE_LIST_UTILS_H */
