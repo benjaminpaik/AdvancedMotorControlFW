@@ -1,4 +1,4 @@
-# AdvancedMotorControl
+# AdvancedMotorControlFW
 
 Embedded motor control software demo for the STM32G4.
 
