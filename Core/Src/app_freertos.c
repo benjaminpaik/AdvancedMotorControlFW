@@ -315,8 +315,8 @@ void CommTask(void *argument)
 //  ble_set_connectable();
 
   S.int_flash_flag = TRUE;
-  // load parameters on startup
   load_parameters((uint32_t *)P.a, PARAMETER_ARRAY_SIZE);
+  implement_parameters();
 
   /* Infinite loop */
   for(;;)
@@ -348,10 +348,6 @@ void host_processor(void)
   S.mode_previous = S.mode;
   S.mode = get_usb_rx_mode();
 
-  if(S.mode_previous == WRITE_MODE && S.mode != WRITE_MODE) {
-    implement_parameters();
-  }
-
   switch(S.mode) {
 
   case(IDLE_MODE):
@@ -375,7 +371,9 @@ void host_processor(void)
     break;
 
   case(WRITE_MODE):
-    write_parameters(P.a, NUM_TELEMETRY_STATES - 1, get_usb_tx_data(), get_usb_rx_data());
+    if(write_parameters(P.a, NUM_TELEMETRY_STATES - 1, get_usb_tx_data(), get_usb_rx_data())) {
+      implement_parameters();
+    }
     set_usb_tx_data();
     set_usb_tx_mode(WRITE_MODE);
     break;
