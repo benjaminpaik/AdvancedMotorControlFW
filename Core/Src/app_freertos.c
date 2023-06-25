@@ -207,7 +207,7 @@ void ControlTask(void *argument)
 {
   /* USER CODE BEGIN ControlTask */
   // positive current limit
-  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 4094);
+  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 4095);
   // negative current limit
   HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1);
   // start timer to trigger ADC conversions
@@ -244,6 +244,7 @@ void ControlTask(void *argument)
       S.controller.obs.ss.x[2] = 0;
       g_kill_switch = FALSE;
 
+//      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
       enable_trap_drive(&S.motor, FALSE);
       set_usb_tx_mode(IDLE_MODE);
       break;
@@ -266,10 +267,14 @@ void ControlTask(void *argument)
         enable_trap_drive(&S.motor, TRUE);
         set_usb_tx_mode(RUN_MODE);
       }
+
+//      update_pwm_cmd(&S.motor, (0.001F * S.cmd.rate.out));
+//      enable_trap_drive(&S.motor, TRUE);
+//      set_usb_tx_mode(RUN_MODE);
       break;
 
     case(CAL_MODE):
-      update_pwm_cmd(&S.motor, (0.001F * S.cmd.raw));
+      update_pwm_cmd(&S.motor, (0.001F * S.cmd.out));
       if(update_trap_cal(&S.motor)) {
         set_usb_tx_mode(NULL_MODE);
       }

@@ -678,9 +678,6 @@ static uint8_t USBD_CUSTOM_HID_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
   NAKed till the end of the application processing */
   ((USBD_CUSTOM_HID_ItfTypeDef *)pdev->pUserData)->OutEvent(hhid->Report_buf);
 
-  USBD_LL_PrepareReceive(pdev, CUSTOM_HID_EPOUT_ADDR , hhid->Report_buf,
-                         USBD_CUSTOMHID_OUTREPORT_BUF_SIZE);
-
   return (uint8_t)USBD_OK;
 }
 
@@ -728,7 +725,6 @@ static uint8_t USBD_CUSTOM_HID_EP0_RxReady(USBD_HandleTypeDef *pdev)
   if (hhid->IsReportAvailable == 1U)
   {
     ((USBD_CUSTOM_HID_ItfTypeDef *)pdev->pUserData)->OutEvent(hhid->Report_buf);
-
     hhid->IsReportAvailable = 0U;
   }
 
