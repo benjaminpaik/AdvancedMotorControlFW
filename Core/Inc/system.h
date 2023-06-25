@@ -19,6 +19,7 @@ typedef struct {
 } COMMAND;
 
 typedef struct {
+  uint16_t boot_delay_timer;
   uint8_t int_flash_flag;
   uint8_t mode;
   uint8_t mode_previous;
