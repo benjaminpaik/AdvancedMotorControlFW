@@ -61,7 +61,7 @@ defined in linker script */
 	.type	Reset_Handler, %function
 Reset_Handler:
   // load R0 with the RAM end address
-  ldr	r0, =0x20007FF0
+  ldr	r0, =__RAM_END
   // load R1 with 0xDEADBEEF
   ldr	r1, =0xDEADBEEF
   // load R2 with the value at the RAM end address

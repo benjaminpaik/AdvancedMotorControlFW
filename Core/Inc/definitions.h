@@ -8,6 +8,8 @@
 #ifndef INC_DEFINITIONS_H_
 #define INC_DEFINITIONS_H_
 
+#include "stm32g4xx_hal.h"
+
 #ifndef TRUE
 #define TRUE  (1)
 #endif
@@ -18,9 +20,8 @@
 
 #define SW_VERSION            1.0F
 #define ROM_CRC32             0x2e22b13f
-#define TEXT_START_ADDRESS    0x08003000
-#define ISO_START_ADDRESS     0x0801F800
-#define RAM_END_ADDRESS       (0x20008000 - 0x10)
+
+extern uint16_t __RAM_END, __CODE_START, __CODE_END, __EEPROM_START;
 #define CRC32_SEED            0x04C11DB7
 
 #define INPUT_VOLTAGE       26.0F

@@ -25,6 +25,8 @@
 #ifndef __EEPROM_EMUL_CONF_H
 #define __EEPROM_EMUL_CONF_H
 
+#include "definitions.h"
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -32,7 +34,7 @@
 
 #define NB_OF_VARIABLES         200U  /*!< Number of variables to handle in eeprom */
 // emulated EEPROM start address
-#define START_PAGE_ADDRESS      0x08001000U
+#define START_PAGE_ADDRESS      ((uint32_t)(&__EEPROM_START))
 // number of 10000 write/erase cycles
 #define CYCLES_NUMBER           1U
  // number of guard pages (must be even)

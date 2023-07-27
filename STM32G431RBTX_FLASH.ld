@@ -36,31 +36,36 @@ _Min_Stack_Size = 0x400;	/* required amount of stack */
 /* Memories definition */
 MEMORY
 {
-  RAM    (xrw)    		  : ORIGIN = 0x20000000,   LENGTH = 32K
-  FLASH_BOOT (rx)         : ORIGIN = 0x8000000,
-                            LENGTH = 4k
-  EMULATED_EEPROM (rwx)   : ORIGIN = ORIGIN(FLASH_BOOT) + LENGTH(FLASH_BOOT), 
+  RAM    (xrw)    		  : ORIGIN = 0x20000000,
+  							LENGTH = 32K
+  FLASH (rx)              : ORIGIN = 0x8000000,
+                            LENGTH = 128k - 8K - 2K
+  EMULATED_EEPROM (rwx)   : ORIGIN = ORIGIN(FLASH) + LENGTH(FLASH), 
                             LENGTH = 8k
-  FLASH (rx)              : ORIGIN = ORIGIN(EMULATED_EEPROM) + LENGTH(EMULATED_EEPROM),
-                            LENGTH = 128k - LENGTH(FLASH_BOOT) - LENGTH(EMULATED_EEPROM) - 2K
-  ISO_FLASH (rx)  		  : ORIGIN = 0x0801F800, LENGTH = 2K
+  ISO_FLASH (rx)  		  : ORIGIN = ORIGIN(EMULATED_EEPROM) + LENGTH(EMULATED_EEPROM),  
+  							LENGTH = 2K
 }
 
 /* Sections */
 SECTIONS
 {
+  __RAM_END = ORIGIN(RAM) + LENGTH(RAM) - 0x10;
+  __CODE_END = ORIGIN(EMULATED_EEPROM);
+  __EEPROM_START = ORIGIN(EMULATED_EEPROM);
+
   /* The startup code into "FLASH" Rom type memory */
   .isr_vector :
   {
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASH_BOOT
+  } >FLASH
 
   /* The program code and other data into "FLASH" Rom type memory */
   .text :
   {
     . = ALIGN(4);
+    __CODE_START = .;
     *(.text)           /* .text sections (code) */
     *(.text*)          /* .text* sections (code) */
     *(.glue_7)         /* glue arm to thumb code */

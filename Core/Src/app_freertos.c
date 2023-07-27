@@ -448,7 +448,7 @@ void load_telemetry(void)
 
 void load_bootloader(void)
 {
-  *((uint32_t *)RAM_END_ADDRESS) = 0xDEADBEEF;
+  *((uint32_t *)&__RAM_END) = 0xDEADBEEF;
   NVIC_SystemReset();
 }
 

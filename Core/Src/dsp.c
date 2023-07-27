@@ -104,7 +104,7 @@ uint16_t rom_check(uint32_t *rom_crc32)
 {
   uint16_t *rom_address;
 
-  for(rom_address = (uint16_t *)(TEXT_START_ADDRESS); rom_address < (uint16_t *)(ISO_START_ADDRESS); rom_address++) {
+  for(rom_address = (uint16_t *)(&__CODE_START); rom_address < (uint16_t *)(&__CODE_END); rom_address++) {
     *rom_crc32 = crc32_iteration(*rom_crc32, (*rom_address) >> 8);
     *rom_crc32 = crc32_iteration(*rom_crc32, (*rom_address));
   }
