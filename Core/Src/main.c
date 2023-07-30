@@ -115,6 +115,12 @@ int main(void)
   MX_USB_Device_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  while(HAL_ADCEx_Calibration_Start(&hadc1, 1000000) != HAL_OK);
+  while(HAL_ADCEx_Calibration_Start(&hadc2, 1000000) != HAL_OK);
+  HAL_COMP_Start(&hcomp1);
+  HAL_COMP_Start(&hcomp2);
+  HAL_COMP_Start(&hcomp3);
+  HAL_COMP_Start(&hcomp4);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
   HAL_DAC_Start(&hdac3, DAC_CHANNEL_1);
