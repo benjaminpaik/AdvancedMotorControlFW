@@ -27,9 +27,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "definitions.h"
+#include "math.h"
 #include "adc.h"
 #include "dac.h"
 #include "tim.h"
+#include "motor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,6 +53,7 @@
 /* USER CODE BEGIN Variables */
 extern uint32_t g_adc_buffer[3];
 extern uint32_t g_adc2_buffer[3];
+TRAP_DRIVE motor;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -92,7 +95,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
+  init_trap_drive(&motor, &htim1, &htim2, 1);
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -177,6 +180,7 @@ void LedTask(void *argument)
 }
 
 /* USER CODE BEGIN Header_ControlTask */
+uint16_t g_encoder = 0;
 /**
 * @brief Function implementing the controlTask thread.
 * @param argument: Not used
@@ -186,27 +190,53 @@ void LedTask(void *argument)
 void ControlTask(void *argument)
 {
   /* USER CODE BEGIN ControlTask */
-
-  uint16_t g_dac = 0;
-  // positive current limit
-  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 3000);
-  // negative current limit
-  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1000);
-  // start timer to trigger ADC conversions
-  HAL_TIM_Base_Start_IT(&htim3);
+//  uint16_t g_dac = 0;
+//  // positive current limit
+//  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 3000);
+//  // negative current limit
+//  HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 1000);
+//  // start timer to trigger ADC conversions
+//  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Encoder_Start(&htim8, TIM_CHANNEL_ALL);
 
   /* Infinite loop */
   for(;;)
   {
     vTaskDelay(pdMS_TO_TICKS(10));
+    g_encoder = TIM8->CNT;
+    update_hall_velocity(&motor, VELOCITY_GAIN);
 
-    HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&g_adc2_buffer, ARRAY_SIZE(g_adc2_buffer));
+//    HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&g_adc2_buffer, ARRAY_SIZE(g_adc2_buffer));
+//
+//    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, g_dac);
+//    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_2, DAC_ALIGN_12B_R, (4095 - g_dac));
+//    g_dac++;
+//    g_dac &= 0xFFF;
 
-    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, g_dac);
-    HAL_DAC_SetValue(&hdac1, DAC1_CHANNEL_2, DAC_ALIGN_12B_R, (4095 - g_dac));
-    g_dac++;
-    g_dac &= 0xFFF;
+
   }
+
+//  int32_t milliseconds = 0;
+//  float_t sine_scale = 0;
+//  float_t cos_scale = 0;
+
+//  /* Infinite loop */
+//  for(;;)
+//  {
+//    vTaskDelay(pdMS_TO_TICKS(1));
+//
+//    sine_scale = sinf(M_PI * (2 * 0.001) * milliseconds ) * 1000;
+//    cos_scale = cosf(M_PI * (2 * 0.001) * milliseconds ) * 1000;
+//    if(++milliseconds >= 1000) milliseconds = 0;
+//
+//    set_usb_data32(0, sine_scale);
+//    set_usb_data32(1, cos_scale);
+//    set_usb_data32(2, (milliseconds > 500) * 1000);
+//    set_usb_data32(3, milliseconds);
+//
+//    set_usb_mode(get_mode());
+//    load_usb_tx_data();
+//  }
   /* USER CODE END ControlTask */
 }
 
@@ -216,6 +246,11 @@ volatile uint32_t g_call_count = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
   g_call_count++;
+}
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  update_hall_state(&motor);
+//  update_state_cmd(&motor);
 }
 /* USER CODE END Application */
 

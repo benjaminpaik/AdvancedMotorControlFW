@@ -98,7 +98,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USB_Device_Init();
   MX_TIM1_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
@@ -115,6 +114,8 @@ int main(void)
   MX_CORDIC_Init();
   MX_TIM3_Init();
   MX_CRC_Init();
+  MX_USB_Device_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
