@@ -76,6 +76,13 @@ const osThreadAttr_t controlTask_attributes = {
   .priority = (osPriority_t) osPriorityHigh,
   .stack_size = 128 * 4
 };
+/* Definitions for commTask */
+osThreadId_t commTaskHandle;
+const osThreadAttr_t commTask_attributes = {
+  .name = "commTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 512 * 4
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -85,6 +92,7 @@ const osThreadAttr_t controlTask_attributes = {
 void DefaultTask(void *argument);
 void LedTask(void *argument);
 void ControlTask(void *argument);
+void CommTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -96,6 +104,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
   init_trap_drive(&motor, &htim1, &htim2, 1);
+  init_encoder(&motor.encoder, &htim8);
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -123,6 +132,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of controlTask */
   controlTaskHandle = osThreadNew(ControlTask, NULL, &controlTask_attributes);
+
+  /* creation of commTask */
+  commTaskHandle = osThreadNew(CommTask, NULL, &commTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -197,7 +209,6 @@ void ControlTask(void *argument)
   HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 0);
   // start timer to trigger ADC conversions
   HAL_TIM_Base_Start_IT(&htim3);
-  HAL_TIM_Encoder_Start(&htim8, TIM_CHANNEL_ALL);
 
   enable_trap_drive(&motor, TRUE);
 
@@ -205,10 +216,9 @@ void ControlTask(void *argument)
   for(;;)
   {
     vTaskDelay(pdMS_TO_TICKS(10));
-    g_encoder = TIM8->CNT;
+    update_encoder_position(&motor.encoder);
 
-    HAL_DAC_SetValue(&hdac3, DAC_CHANNEL_2, DAC_ALIGN_12B_R, g_dac);
-    update_pwm_cmd(&motor, 1500);
+    update_pwm_cmd(&motor, 0.25);
 //    update_hall_velocity(&motor, VELOCITY_GAIN);
 
 //    HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&g_adc2_buffer, ARRAY_SIZE(g_adc2_buffer));
@@ -243,6 +253,24 @@ void ControlTask(void *argument)
   /* USER CODE END ControlTask */
 }
 
+/* USER CODE BEGIN Header_CommTask */
+/**
+* @brief Function implementing the commTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_CommTask */
+void CommTask(void *argument)
+{
+  /* USER CODE BEGIN CommTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END CommTask */
+}
+
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 volatile uint32_t g_call_count = 0;
@@ -250,9 +278,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
   g_call_count++;
 }
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  update_hall_state(&motor);
+  update_hall_state(&motor.hall);
   update_state_cmd(&motor);
 }
 /* USER CODE END Application */

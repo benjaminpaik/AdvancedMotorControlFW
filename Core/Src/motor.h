@@ -36,31 +36,47 @@
                             (I->CCMR2 = (I->CCMR2 & ~TIM_CCMR2_OC3M_Msk) | TIM_OCMODE_FORCED_INACTIVE)
 
 typedef struct {
-    volatile uint8_t enable;
-    TIM_HandleTypeDef *pwm_tim;
-    TIM_HandleTypeDef *hall_tim;
-    int8_t polarity;
-    int32_t pwm_command;
-    uint16_t compare;
-    int16_t cmd_state;
+  TIM_HandleTypeDef *tim;
+  int8_t polarity;
+  int8_t index;
+  int8_t state_delta;
 
-    volatile float_t period;
-    int8_t hall_polarity;
-    int8_t hall_index;
-    int8_t hall_state_delta;
+  volatile int8_t state;
+  volatile int8_t state_previous;
+  volatile int32_t position;
+  volatile float_t period;
 
-    volatile uint32_t encoder_position;
+  int32_t position_previous;
+  int32_t position_delta;
+  float_t velocity;
+} HALL_SENSORS;
 
-    volatile int8_t hall_state;
-    volatile int8_t hall_state_previous;
-    volatile int32_t position;
-    int32_t position_previous;
-    int32_t position_delta;
-    float_t velocity;
+typedef struct {
+  TIM_HandleTypeDef *tim;
+  volatile uint32_t position;
+} ENCODER;
+
+typedef struct {
+  HALL_SENSORS hall;
+  ENCODER encoder;
+
+  volatile uint8_t enable;
+  TIM_HandleTypeDef *pwm_tim;
+  int8_t polarity;
+  int32_t pwm_command;
+  uint16_t compare;
+  int16_t cmd_state;
 } TRAP_DRIVE;
 
 void init_trap_drive(TRAP_DRIVE *trap_drive, TIM_HandleTypeDef *pwm_tim, TIM_HandleTypeDef *hall_tim, int32_t direction);
-void update_hall_state(TRAP_DRIVE *trap_drive);
-void update_hall_velocity(TRAP_DRIVE *trap_drive, float_t gain);
+void init_hall_sensors(HALL_SENSORS *hall, TIM_HandleTypeDef *hall_tim);
+void init_encoder(ENCODER *encoder, TIM_HandleTypeDef *encoder_tim);
+void enable_trap_drive(TRAP_DRIVE *trap_drive, uint8_t enable);
+void update_pwm_cmd(TRAP_DRIVE *trap_drive, float_t command);
+void update_state_cmd(TRAP_DRIVE *trap_drive);
+void disable_trap_drive(TRAP_DRIVE *trap_drive);
+void update_hall_state(HALL_SENSORS *hall);
+void update_hall_velocity(HALL_SENSORS *hall, float_t gain);
+void update_encoder_position(ENCODER *encoder);
 
 #endif /* INC_MOTOR_H_ */
