@@ -392,7 +392,7 @@ ProjectManager.StackSize=0x400
 ProjectManager.TargetToolchain=STM32CubeIDE
 ProjectManager.ToolChainLocation=
 ProjectManager.UnderRoot=true
-ProjectManager.functionlistsort=1-MX_GPIO_Init-GPIO-false-HAL-true,2-SystemClock_Config-RCC-false-HAL-false,3-MX_TIM1_Init-TIM1-false-HAL-true,4-MX_ADC1_Init-ADC1-false-HAL-true,5-MX_ADC2_Init-ADC2-false-HAL-true,6-MX_SPI3_Init-SPI3-false-HAL-true,7-MX_TIM8_Init-TIM8-false-HAL-true,8-MX_USART1_UART_Init-USART1-false-HAL-true,9-MX_COMP1_Init-COMP1-false-HAL-true,10-MX_COMP2_Init-COMP2-false-HAL-true,11-MX_COMP3_Init-COMP3-false-HAL-true,12-MX_COMP4_Init-COMP4-false-HAL-true,13-MX_DAC3_Init-DAC3-false-HAL-true,14-MX_DAC1_Init-DAC1-false-HAL-true,15-MX_DMA_Init-DMA-false-HAL-true,16-MX_CORDIC_Init-CORDIC-false-HAL-true,17-MX_TIM3_Init-TIM3-false-HAL-true,18-MX_CRC_Init-CRC-false-HAL-true,19-MX_USB_Device_Init-USB_DEVICE-false-HAL-false,20-MX_TIM2_Init-TIM2-false-HAL-true
+ProjectManager.functionlistsort=1-MX_GPIO_Init-GPIO-false-HAL-true,2-SystemClock_Config-RCC-false-HAL-false,3-MX_TIM1_Init-TIM1-false-HAL-true,4-MX_ADC1_Init-ADC1-false-HAL-true,5-MX_ADC2_Init-ADC2-false-HAL-true,6-MX_TIM8_Init-TIM8-false-HAL-true,7-MX_USART1_UART_Init-USART1-false-HAL-true,8-MX_COMP1_Init-COMP1-false-HAL-true,9-MX_COMP2_Init-COMP2-false-HAL-true,10-MX_COMP3_Init-COMP3-false-HAL-true,11-MX_COMP4_Init-COMP4-false-HAL-true,12-MX_DAC3_Init-DAC3-false-HAL-true,13-MX_DAC1_Init-DAC1-false-HAL-true,14-MX_DMA_Init-DMA-false-HAL-true,15-MX_CORDIC_Init-CORDIC-false-HAL-true,16-MX_TIM3_Init-TIM3-false-HAL-true,17-MX_CRC_Init-CRC-false-HAL-true,18-MX_USB_Device_Init-USB_DEVICE-false-HAL-false,19-MX_TIM2_Init-TIM2-false-HAL-true
 RCC.ADC12Freq_Value=144000000
 RCC.AHBFreq_Value=144000000
 RCC.APB1Freq_Value=144000000
@@ -481,7 +481,7 @@ STMicroelectronics.X-CUBE-BLE2.3.2.2.BlueNRGAa2CcWirelessJjBlueNRGAa2JjControlle
 STMicroelectronics.X-CUBE-BLE2.3.2.2.BlueNRGAa2CcWirelessJjBlueNRGAa2JjHCIIiTL=Basic
 STMicroelectronics.X-CUBE-BLE2.3.2.2.BlueNRGAa2CcWirelessJjBlueNRGAa2JjHCIIiTLIiINTERFACE=UserBoard
 STMicroelectronics.X-CUBE-BLE2.3.2.2.BlueNRGAa2CcWirelessJjBlueNRGAa2JjUtils=true
-STMicroelectronics.X-CUBE-BLE2.3.2.2.IPParameters=BlueNRGAa2CcWirelessJjBlueNRGAa2JjHCIIiTLIiINTERFACE,BlueNRGAa2CcWirelessJjBlueNRGAa2JjUtils,BlueNRGAa2CcWirelessJjBlueNRGAa2JjController,BlueNRGAa2CcWirelessJjBlueNRGAa2JjHCIIiTL
+STMicroelectronics.X-CUBE-BLE2.3.2.2.IPParameters=BlueNRGAa2CcWirelessJjBlueNRGAa2JjController,BlueNRGAa2CcWirelessJjBlueNRGAa2JjUtils,BlueNRGAa2CcWirelessJjBlueNRGAa2JjHCIIiTL,BlueNRGAa2CcWirelessJjBlueNRGAa2JjHCIIiTLIiINTERFACE
 STMicroelectronics.X-CUBE-BLE2.3.2.2.WirelessJjBlueNRGAa2_Checked=true
 STMicroelectronics.X-CUBE-BLE2.3.2.20.BSP.STBoard=false
 STMicroelectronics.X-CUBE-BLE2.3.2.20.BSP.api=HAL_EXTI_DRIVER
