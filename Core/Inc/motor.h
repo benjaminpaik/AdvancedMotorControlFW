@@ -85,10 +85,11 @@ void init_trap_drive(TRAP_DRIVE *trap_drive, TIM_HandleTypeDef *pwm_tim, TIM_Han
 void init_encoder(ENCODER *encoder, TIM_HandleTypeDef *encoder_tim);
 void enable_trap_drive(TRAP_DRIVE *trap_drive, uint8_t enable);
 void update_state_cmd(TRAP_DRIVE *trap_drive);
+
 void update_pwm_cmd(TRAP_DRIVE *trap_drive, float_t command);
-void update_current(TRAP_DRIVE *trap_drive, float_t phase_a, float_t phase_b);
+__attribute__ ((long_call, section (".RamFunc"))) void update_current(TRAP_DRIVE *trap_drive, float_t phase_a, float_t phase_b);
 int32_t update_trap_cal(TRAP_DRIVE *trap_drive);
-void update_hall_state(HALL_SENSORS *hall);
+__attribute__ ((long_call, section (".RamFunc"))) void update_hall_state(HALL_SENSORS *hall);
 void update_hall_velocity(HALL_SENSORS *hall, float_t gain);
 void update_encoder_position(ENCODER *encoder);
 float_t scale_voltage_command(float_t u);
