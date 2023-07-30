@@ -99,3 +99,41 @@ void pi_control(PID *pid, float_t setpoint, float_t feedback, PID_STATE inner_lo
     pid->state = inner_loop_state;
   }
 }
+
+uint16_t rom_check(uint32_t *rom_crc32)
+{
+  uint16_t *rom_address;
+
+  for(rom_address = (uint16_t *)(TEXT_START_ADDRESS); rom_address < (uint16_t *)(ISO_START_ADDRESS); rom_address++) {
+    *rom_crc32 = crc32_iteration(*rom_crc32, (*rom_address) >> 8);
+    *rom_crc32 = crc32_iteration(*rom_crc32, (*rom_address));
+  }
+  return (*rom_crc32 != ROM_CRC32);
+}
+
+void crc32_table_generator(uint32_t crc32_seed)
+{
+  uint32_t dividend = 0;
+  uint32_t current_byte = 0;
+  uint16_t bit = 0;
+
+  for(dividend = 0; dividend < CRC_TABLE_SIZE; dividend++) {
+    current_byte = dividend << 24;
+    for(bit = 0; bit < 8; bit++) {
+      if((current_byte & 0x80000000) != 0) {
+        current_byte <<= 1;
+        current_byte ^= crc32_seed;
+      }
+      else {
+        current_byte <<= 1;
+      }
+    }
+    g_crc32_table[dividend] = current_byte;
+  }
+}
+
+uint32_t crc32_iteration(uint32_t crc, uint8_t byte)
+{
+  uint16_t index = ((crc ^ ((uint32_t)byte << 24)) >> 24) & 0xFF;
+  return ((crc << 8) ^ g_crc32_table[index]);
+}

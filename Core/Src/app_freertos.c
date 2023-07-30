@@ -117,6 +117,8 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
   init_trap_drive(&S.motor, &htim1, &htim2, 1);
   init_encoder(&S.motor.encoder, &htim8);
+  crc32_table_generator(CRC32_SEED);
+  S.status.bit.rom_fault = rom_check(&S.rom_crc32);
   S.int_flash_flag = TRUE;
 
   load_parameters((int32_t *)(&P), NUM_PARAMETERS);
@@ -422,6 +424,8 @@ void host_processor(void)
 void implement_parameters(void)
 {
   P.InfoNumParameters = NUM_PARAMETERS;
+  P.InfoSwChecksum = *(int32_t *)(&S.rom_crc32);
+  P.InfoSwVersion = SW_VERSION;
 }
 
 void load_telemetry(void)

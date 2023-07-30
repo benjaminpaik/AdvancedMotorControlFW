@@ -98,4 +98,8 @@ void init_persistence(PERSISTENCE *persistence, uint16_t threshold, uint16_t lat
 uint16_t persistence_check(PERSISTENCE *persistence, uint16_t condition);
 void persistence_reset(PERSISTENCE *persistence);
 
+__attribute__ ((long_call, section (".isolated"))) uint16_t rom_check(uint32_t *rom_crc32);
+void crc32_table_generator(uint32_t crc32_seed);
+uint32_t crc32_iteration(uint32_t crc, uint8_t byte);
+
 #endif /* SRC_DSP_H_ */

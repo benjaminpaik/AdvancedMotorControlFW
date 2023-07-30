@@ -18,15 +18,26 @@ typedef struct {
   float out;
 } COMMAND;
 
+typedef union {
+  struct {
+    uint32_t rom_fault:1;
+  } bit;
+  uint32_t all;
+} STATUS;
+
 typedef struct {
+  STATUS status;
+  uint32_t rom_crc32;
   uint16_t boot_delay_timer;
   uint8_t int_flash_flag;
+
   uint8_t mode;
   uint8_t mode_previous;
-  COMMAND cmd;
-  float pwm_cmd;
-  TRAP_DRIVE motor;
+
+  float_t pwm_cmd;
   STATE_CONTROLLER controller;
+  TRAP_DRIVE motor;
+  COMMAND cmd;
 } SYSTEM;
 
 #endif /* INC_SYSTEM_H_ */

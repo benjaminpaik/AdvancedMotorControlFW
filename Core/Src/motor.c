@@ -10,7 +10,6 @@
 #include "dsp.h"
 #include "tim.h"
 #include "stdlib.h"
-#include "limits.h"
 
 void disable_trap_drive(TRAP_DRIVE *trap_drive);
 void init_hall_sensors(HALL_SENSORS *hall, TIM_HandleTypeDef *hall_tim);
@@ -20,9 +19,7 @@ void init_trap_drive(TRAP_DRIVE *trap_drive, TIM_HandleTypeDef *pwm_tim, TIM_Han
   init_hall_sensors(&trap_drive->hall, hall_tim);
 
   trap_drive->pwm_tim = pwm_tim;
-  // set default state data
   trap_drive->cmd_state = 1;
-  // initialize duty cycle variables
   trap_drive->pwm_command = 0;
   trap_drive->compare = 0;
   trap_drive->enable = FALSE;
@@ -99,18 +96,17 @@ void update_state_cmd(TRAP_DRIVE *trap_drive)
 
 	  if(trap_drive->pwm_command >= 0) {
 	    trap_drive->cmd_state = trap_drive->hall.state + 1;
-	    if(trap_drive->cmd_state > 6) {
-	      trap_drive->cmd_state -= 6;
+	    if(trap_drive->cmd_state > HALL_MAX) {
+	      trap_drive->cmd_state -= HALL_MAX;
 	    }
 	  }
 	  else {
 	    trap_drive->cmd_state = trap_drive->hall.state - 2;
-	    if(trap_drive->cmd_state < 1) {
-	      trap_drive->cmd_state += 6;
+	    if(trap_drive->cmd_state < HALL_MIN) {
+	      trap_drive->cmd_state += HALL_MAX;
 	    }
 	  }
 
-    // configure PWM registers based on the commanded state
     switch(trap_drive->cmd_state) {
 
     case(1):
@@ -194,7 +190,9 @@ int32_t update_trap_cal(TRAP_DRIVE *trap_drive)
   static PERSISTENCE persistence = {.threshold = 500, .latch = FALSE};
   trap_drive->enable = FALSE;
 
-  if(trap_drive->cal_state >= 1 && trap_drive->cal_state <= 6) {
+  // check for valid state command
+  if(trap_drive->cal_state >= HALL_MIN && trap_drive->cal_state <= HALL_MAX) {
+    // if the state has not changed for one second
     if(persistence_check(&persistence, (trap_drive->hall.index_previous == trap_drive->hall.index))) {
       if(trap_drive->hall.index <= HALL_MAX) {
         trap_drive->hall.map[trap_drive->hall.index] = trap_drive->cal_state;
@@ -208,73 +206,59 @@ int32_t update_trap_cal(TRAP_DRIVE *trap_drive)
   switch(trap_drive->cal_state) {
 
   case(1):
-    // load duty cycle
     SET_PWM1_ON(trap_drive->pwm_tim->Instance);
     SET_PWM3_ON(trap_drive->pwm_tim->Instance);
-      // phase lowers
     SET_PWM2_LOW(trap_drive->pwm_tim->Instance);
     break;
 
   case(2):
-    // load duty cycle
     SET_PWM1_ON(trap_drive->pwm_tim->Instance);
-    // phase lowers
     SET_PWM2_LOW(trap_drive->pwm_tim->Instance);
     SET_PWM3_LOW(trap_drive->pwm_tim->Instance);
     break;
 
   case(3):
-    // load duty cycle
     SET_PWM1_ON(trap_drive->pwm_tim->Instance);
     SET_PWM2_ON(trap_drive->pwm_tim->Instance);
-    // phase lowers
     SET_PWM3_LOW(trap_drive->pwm_tim->Instance);
     break;
 
   case(4):
-    // load duty cycle
     SET_PWM2_ON(trap_drive->pwm_tim->Instance);
-    // phase lowers
     SET_PWM1_LOW(trap_drive->pwm_tim->Instance);
     SET_PWM3_LOW(trap_drive->pwm_tim->Instance);
     break;
 
   case(5):
-    // load duty cycle
     SET_PWM2_ON(trap_drive->pwm_tim->Instance);
     SET_PWM3_ON(trap_drive->pwm_tim->Instance);
-    // phase lowers
     SET_PWM1_LOW(trap_drive->pwm_tim->Instance);
     break;
 
   case(6):
-    // load duty cycle
     SET_PWM3_ON(trap_drive->pwm_tim->Instance);
-    // phase lowers
     SET_PWM1_LOW(trap_drive->pwm_tim->Instance);
     SET_PWM2_LOW(trap_drive->pwm_tim->Instance);
     break;
 
   default:
     disable_trap_drive(trap_drive);
-    // reset the state command
     trap_drive->cal_state = 0;
 
     // check for valid hall mapping
-    if(trap_drive->hall.map[1] + trap_drive->hall.map[2] + trap_drive->hall.map[3] +
-       trap_drive->hall.map[4] + trap_drive->hall.map[5] + trap_drive->hall.map[6] == HALL_MAP_SUM) {
-      // generate the hall map value
+    if(trap_drive->hall.map[1] + trap_drive->hall.map[2] +
+       trap_drive->hall.map[3] + trap_drive->hall.map[4] +
+       trap_drive->hall.map[5] + trap_drive->hall.map[6] == HALL_MAP_SUM) {
+      // return the hall map encoding
       return ((int32_t)trap_drive->hall.map[6] << 20) |
              ((int32_t)trap_drive->hall.map[5] << 16) |
              ((int32_t)trap_drive->hall.map[4] << 12) |
              ((int32_t)trap_drive->hall.map[3] << 8)  |
              ((int32_t)trap_drive->hall.map[2] << 4)  |
              ((int32_t)trap_drive->hall.map[1]);
-
     }
-    // invalid hall mapping
+    // restart calibration sequence if hall map not valid
     else {
-      // restart calibration sequence
       trap_drive->cal_state = 1;
     }
   }

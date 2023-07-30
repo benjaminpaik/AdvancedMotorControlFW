@@ -1,7 +1,7 @@
 // Thu Sep 12 15:27:59 PDT 2019
 
 => command range: 1000, -1000, 
-=> button text: IDLE, RUN, 
+=> button text: IDLE, RUN, CALIBRATE,
 
 
 index || state name           || state max       || state min       || display || color    || ratio
@@ -33,7 +33,7 @@ index || bit name (command)            || bits
 
 index || parameter name                   || type  || value
 ------------------------------------------------------------
-0000  || Parameters                       || long  || 19
+0000  || InfoNumParameters                || long  || 19
 0001  || InfoSwChecksum                   || long  || -602876262
 0002  || InfoSwVersion                    || float || 2.0
 0003  || Reserved0                        || long  || 12
