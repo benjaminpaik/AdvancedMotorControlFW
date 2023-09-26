@@ -120,8 +120,8 @@ int main(void)
   if(EE_Init(EE_FORCED_ERASE) != EE_OK) {
     Error_Handler();
   }
-  while(HAL_ADCEx_Calibration_Start(&hadc1, 1000000) != HAL_OK);
-  while(HAL_ADCEx_Calibration_Start(&hadc2, 1000000) != HAL_OK);
+  while(HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED) != HAL_OK);
+  while(HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED) != HAL_OK);
   HAL_COMP_Start(&hcomp1);
   HAL_COMP_Start(&hcomp2);
   HAL_COMP_Start(&hcomp3);
