@@ -93,6 +93,9 @@ void pi_control(PID *pid, float_t setpoint, float_t feedback, PID_STATE inner_lo
     else if(inner_loop_state == PID_LOWER_LIMIT) {
       pid->state = pid->lower_limit_state;
     }
+    else {
+      pid->state = PID_IN_RANGE;
+    }
   }
   else {
     pid->out = setpoint;

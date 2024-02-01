@@ -373,26 +373,26 @@ void host_processor(void)
     set_usb_tx_mode(CAL_MODE);
     break;
 
-  case(WRITE_MODE):
+  case(WRITE_PARAMETER_MODE):
     if(write_parameters((int32_t *)(&P), NUM_TELEMETRY_STATES - 1, get_usb_tx_data(), get_usb_rx_data())) {
       implement_parameters();
     }
     set_usb_tx_data();
-    set_usb_tx_mode(WRITE_MODE);
+    set_usb_tx_mode(WRITE_PARAMETER_MODE);
     break;
 
-  case(READ_MODE):
+  case(READ_PARAMETER_MODE):
     read_parameters((int32_t *)(&P), NUM_TELEMETRY_STATES - 1, get_usb_tx_data(), get_usb_rx_data());
     set_usb_tx_data();
-    set_usb_tx_mode(READ_MODE);
+    set_usb_tx_mode(READ_PARAMETER_MODE);
     break;
 
   // save parameters in RAM to flash memory
-  case(FLASH_MODE):
+  case(FLASH_PARAMETER_MODE):
     if(S.int_flash_flag) {
       S.int_flash_flag = FALSE;
       flash_parameters((int32_t *)(&P), NUM_PARAMETERS);
-      set_usb_tx_mode(FLASH_MODE);
+      set_usb_tx_mode(FLASH_PARAMETER_MODE);
     }
     break;
 
