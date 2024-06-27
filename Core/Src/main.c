@@ -76,6 +76,7 @@ volatile uint32_t g_adc2_buffer[3];
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -113,7 +114,6 @@ int main(void)
   MX_CORDIC_Init();
   MX_TIM3_Init();
   MX_CRC_Init();
-  MX_USB_Device_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   FLASH->SR |= FLASH_FLAG_SR_ERRORS;
@@ -136,13 +136,14 @@ int main(void)
   /* Init scheduler */
   osKernelInitialize();
 
-  /* Call init function for freertos objects (in freertos.c) */
+  /* Call init function for freertos objects (in cmsis_os2.c) */
   MX_FREERTOS_Init();
 
   /* Start scheduler */
   osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)

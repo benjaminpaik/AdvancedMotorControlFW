@@ -39,6 +39,7 @@
 #include "dac.h"
 #include "tim.h"
 #include "eeprom_emul.h"
+#include "usb_device.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -173,6 +174,8 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_DefaultTask */
 void DefaultTask(void *argument)
 {
+  /* init code for USB_Device */
+  MX_USB_Device_Init();
   /* USER CODE BEGIN DefaultTask */
   /* Infinite loop */
   for(;;)
