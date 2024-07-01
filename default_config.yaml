@@ -1,0 +1,168 @@
+--- 
+
+# 2024-06-30 14:21:33.176472
+
+command: 
+  max: 1000 
+  min: -1000 
+  modes: 
+  - IDLE 
+  - RUN 
+  - CAL 
+
+telemetry: 
+  - # 0 
+    name: command
+    max: 3.14
+    min: -3.14
+    type: float
+    scale: 1.0
+    color: white
+    display: true
+  - # 1 
+    name: u
+    max: 10.0
+    min: -10.0
+    type: float
+    scale: 1.0
+    color: red
+    display: true
+  - # 2 
+    name: r
+    max: 10.0
+    min: -10.0
+    type: float
+    scale: 1.0
+    color: green
+    display: false
+  - # 3 
+    name: pwm
+    max: 1.0
+    min: -1.0
+    type: float
+    scale: 1.0
+    color: yellow
+    display: true
+  - # 4 
+    name: encoder
+    max: 3.14
+    min: -3.14
+    type: float
+    scale: 1.0
+    color: magenta
+    display: false
+  - # 5 
+    name: est pos
+    max: 3.14
+    min: -3.14
+    type: float
+    scale: 1.0
+    color: cyan
+    display: false
+  - # 6 
+    name: est vel
+    max: 10.0
+    min: -10.0
+    type: float
+    scale: 1.0
+    color: white
+    display: false
+  - # 7 
+    name: est cur
+    max: 20.0
+    min: -20.0
+    type: float
+    scale: 1.0
+    color: green
+    display: false
+  - # 8 
+    name: est error
+    max: 20.0
+    min: -20.0
+    type: float
+    scale: 1.0
+    color: red
+    display: false
+  - # 9 
+    name: phase a
+    max: 5000.0
+    min: -5000.0
+    type: float
+    scale: 1.0
+    color: yellow
+    display: true
+  - # 10 
+    name: phase b
+    max: 5000.0
+    min: -5000.0
+    type: float
+    scale: 1.0
+    color: purple
+    display: true
+  - # 11 
+    name: current
+    max: 5000.0
+    min: -5000.0
+    type: float
+    scale: 1.0
+    color: cyan
+    display: true
+  - # 12 
+    name: state 12
+    max: 1000.0
+    min: -1000.0
+    type: int
+    scale: 1.0
+    color: grey
+    display: false
+  - # 13 
+    name: state 13
+    max: 1000.0
+    min: -1000.0
+    type: int
+    scale: 1.0
+    color: grey
+    display: false
+  - # 14 
+    name: status
+    max: 1000.0
+    min: -1000.0
+    type: int
+    scale: 1.0
+    color: magenta
+    display: false
+
+status: 
+  state: status 
+  fields: 
+    - # 0 
+      name: ROM fault 
+      bits: 1 
+    - # 1 
+      name: parameter fault 
+      bits: 1 
+    - # 2 
+      name: system mode 
+      bits: 2 
+
+parameters: 
+  - # 0 
+    name: InfoNumParameters 
+    type: int 
+    value: 5 
+  - # 1 
+    name: InfoSwChecksum 
+    type: int 
+    value: -602876262 
+  - # 2 
+    name: InfoSwVersion 
+    type: float 
+    value: 2.0 
+  - # 3 
+    name: Reserved 0 
+    type: float 
+    value: 3.14 
+  - # 4 
+    name: Reserved 1 
+    type: int 
+    value: 1234 
