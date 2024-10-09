@@ -27,8 +27,8 @@ typedef struct {
 } FOC_CLARKE;
 
 typedef struct {
-  volatile float_t ds;
-  volatile float_t dq;
+  volatile float_t id;
+  volatile float_t iq;
 } FOC_PARK;
 
 typedef struct {

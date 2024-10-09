@@ -12,7 +12,7 @@ void foc_init(FOC* restrict foc, float_t vd_limit, float_t vq_limit)
 {
   float_t vq_limit_max;
   foc->ipark.vd_limit = limit_f(vd_limit, 1.0F, 0.0F);
-  vq_limit_max = 1.0F / (foc->ipark.vd_limit * foc->ipark.vd_limit);
+  vq_limit_max = sqrtf(1.0F - (foc->ipark.vd_limit * foc->ipark.vd_limit));
   foc->ipark.vq_limit = limit_f(vq_limit, vq_limit_max, 0.0F);
 }
 
@@ -33,10 +33,10 @@ void foc_clarke(FOC* restrict foc)
 
 void foc_park(FOC* restrict foc)
 {
-  foc->park.ds = (foc->clarke.alpha * foc->input.cos) +
+  foc->park.id = (foc->clarke.alpha * foc->input.cos) +
                  (foc->clarke.beta * foc->input.sin);
 
-  foc->park.dq = (foc->clarke.beta * foc->input.cos) -
+  foc->park.iq = (foc->clarke.beta * foc->input.cos) -
                  (foc->clarke.alpha * foc->input.sin);
 }
 
