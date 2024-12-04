@@ -42,8 +42,8 @@ void foc_park(FOC* restrict foc)
 
 void foc_ipark(FOC* restrict foc, float_t vd, float_t vq)
 {
-  foc->ipark.vd_limited = (vd > foc->ipark.vd_limit) ? foc->ipark.vd_limit : vd;
-  foc->ipark.vq_limited = (vq > foc->ipark.vq_limit) ? foc->ipark.vq_limit : vq;
+  foc->ipark.vd_limited = limit_f(vd, foc->ipark.vd_limit, -foc->ipark.vd_limit);
+  foc->ipark.vq_limited = limit_f(vq, foc->ipark.vq_limit, -foc->ipark.vq_limit);
 
   foc->ipark.alpha = (foc->ipark.vd_limited * foc->input.cos) -
                      (foc->ipark.vq_limited * foc->input.sin);
@@ -54,37 +54,36 @@ void foc_ipark(FOC* restrict foc, float_t vd, float_t vq)
 void foc_svpwm(FOC* restrict foc)
 {
   // calculate 3-phase sinusoidal outputs (60 degrees apart)
-  foc->sv.a = foc->ipark.beta;
-  foc->sv.b = (foc->ipark.beta / 2) + (foc->ipark.alpha * COS_30);
-  foc->sv.c = foc->sv.b - foc->sv.a;
+  foc->sv.p90 = foc->ipark.beta;
+  foc->sv.p30 = (foc->ipark.beta * COS_60) + (foc->ipark.alpha * COS_30);
+  foc->sv.p330 = foc->sv.p30 - foc->sv.p90;
 
   // determine the active sector
-  foc->sv.sector = ((foc->sv.c > 0) << 2) |
-                   ((foc->sv.b > 0) << 1) |
-                    (foc->sv.a > 0);
+  foc->sv.sector_key = ((foc->sv.p330 > 0) << 2) |
+                       ((foc->sv.p30 > 0) << 1) |
+                        (foc->sv.p90 > 0);
 
-  // sectors 2 and 5 are invalid
-  switch(foc->sv.sector) {
+  switch(foc->sv.sector_key) {
 
-  case(0):
-  case(7):
-    foc->sv.t1 = foc->sv.b;
-    foc->sv.t2 = foc->sv.a - foc->sv.c;
-    foc->sv.t3 = -foc->sv.b;
+  case(SECTOR_1):
+  case(SECTOR_4):
+    foc->sv.t1 = foc->sv.p30;
+    foc->sv.t2 = foc->sv.p90 - foc->sv.p330;
+    foc->sv.t3 = -foc->sv.p30;
     break;
 
-  case(3):
-  case(4):
-    foc->sv.t1 = foc->sv.c + foc->sv.b;
-    foc->sv.t2 = foc->sv.a;
-    foc->sv.t3 = -foc->sv.a;
+  case(SECTOR_2):
+  case(SECTOR_5):
+    foc->sv.t1 = foc->sv.p330 + foc->sv.p30;
+    foc->sv.t2 = foc->sv.p90;
+    foc->sv.t3 = -foc->sv.p90;
     break;
 
-  case(1):
-  case(6):
-    foc->sv.t1 = foc->sv.c;
-    foc->sv.t2 = -foc->sv.c;
-    foc->sv.t3 = -(foc->sv.a + foc->sv.b);
+  case(SECTOR_3):
+  case(SECTOR_6):
+    foc->sv.t1 = foc->sv.p330;
+    foc->sv.t2 = -foc->sv.p330;
+    foc->sv.t3 = -(foc->sv.p90 + foc->sv.p30);
     break;
 
   default:

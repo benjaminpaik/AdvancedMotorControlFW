@@ -13,6 +13,7 @@
 
 #define SQRT3       1.732051F
 #define COS_30      0.866F
+#define COS_60      0.5F
 
 typedef struct {
   volatile float_t phase_a;
@@ -41,8 +42,8 @@ typedef struct {
 } FOC_IPARK;
 
 typedef struct {
-  float_t a, b, c;
-  uint16_t sector;
+  float_t p90, p30, p330;
+  uint16_t sector_key;
   volatile float_t t1;
   volatile float_t t2;
   volatile float_t t3;
@@ -56,6 +57,14 @@ typedef struct {
   SV_PWM sv;
 } FOC;
 
+typedef enum {
+  SECTOR_1 = 7,
+  SECTOR_2 = 3,
+  SECTOR_3 = 1,
+  SECTOR_4 = 0,
+  SECTOR_5 = 4,
+  SECTOR_6 = 6
+} SV_SECTOR_MAP;
 
 void foc_input(FOC* restrict foc, float_t phase_a, float_t phase_b, float_t angle);
 void foc_clarke(FOC* restrict foc);
