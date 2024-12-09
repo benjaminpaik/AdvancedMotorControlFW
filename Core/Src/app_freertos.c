@@ -61,7 +61,6 @@
 /* USER CODE BEGIN Variables */
 extern uint32_t g_adc_buffer[3];
 extern uint32_t g_adc2_buffer[3];
-uint16_t g_kill_switch = FALSE;
 SYSTEM S;
 PARAMETER P;
 /* USER CODE END Variables */
@@ -116,7 +115,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-  init_trap_drive(&S.motor, &htim1, &htim2, 1);
+  init_motor_drive(&S.motor, &htim1);
   init_encoder(&S.motor.encoder, &htim8);
   crc32_table_generator(CRC32_SEED);
   S.status.bit.rom_fault = rom_check(&S.rom_crc32);
@@ -229,70 +228,30 @@ void ControlTask(void *argument)
   // start timer to trigger ADC conversions
   HAL_TIM_Base_Start_IT(&htim3);
 
-  // initialize encoder parameters
-  S.motor.encoder.gain = ENCODER_GAIN;
-  S.motor.encoder.offset = ENCODER_OFFSET;
-  init_observer(&S.controller.obs);
-
-  // initialize control gains
-  S.cmd.scale = ((PI / 6) * CMD_SCALING);
-  S.controller.tracking_gain = TRACKING_GAIN;
-  S.controller.K[0] = CONTROL_K0;
-  S.controller.K[1] = CONTROL_K1;
-  S.controller.K[2] = CONTROL_K2;
-
   /* Infinite loop */
   for(;;)
   {
     vTaskDelay(pdMS_TO_TICKS(CTRL_TASK_PERIOD));
-    update_encoder_position(&S.motor.encoder);
-    update_hall_velocity(&S.motor.hall, VELOCITY_GAIN);
-    S.cmd.out = S.cmd.scale * S.cmd.raw;
 
     switch(S.mode) {
 
     case(IDLE_MODE):
-      S.controller.obs.ss.x[0] = S.motor.encoder.out;
-      S.controller.obs.ss.x[1] = 0;
-      S.controller.obs.ss.x[2] = 0;
-      g_kill_switch = FALSE;
-
-      enable_trap_drive(&S.motor, FALSE);
+      enable_drive(&S.motor, FALSE);
       set_usb_tx_mode(IDLE_MODE);
       break;
 
     case(RUN_MODE):
-      if(fabs(S.motor.encoder.out) > S.controller.obs.ss.x_limit[0]) {
-        g_kill_switch = TRUE;
-      }
-
-      if(g_kill_switch) {
-        enable_trap_drive(&S.motor, FALSE);
-        set_usb_tx_mode(IDLE_MODE);
-      }
-      else {
-        update_control_effort(&S.controller, S.cmd.out);
-        update_observer(&S.controller.obs, S.motor.encoder.out, S.controller.u);
-        S.pwm_cmd = scale_voltage_command(S.controller.u);
-
-        update_pwm_cmd(&S.motor, S.pwm_cmd);
-        enable_trap_drive(&S.motor, TRUE);
-        set_usb_tx_mode(RUN_MODE);
-      }
+      S.motor.torque_cmd = S.cmd;
+      enable_drive(&S.motor, TRUE);
+      set_usb_tx_mode(RUN_MODE);
       break;
 
     case(CAL_MODE):
-      update_pwm_cmd(&S.motor, (CMD_SCALING * S.cmd.raw));
-      if(update_trap_cal(&S.motor)) {
-        set_usb_tx_mode(NULL_MODE);
-      }
-      else {
-        set_usb_tx_mode(CAL_MODE);
-      }
+      cal_angle(&S.motor);
       break;
 
     default:
-  	  enable_trap_drive(&S.motor, FALSE);
+  	  enable_drive(&S.motor, FALSE);
   	  set_usb_tx_mode(S.mode);
       break;
     }
@@ -329,7 +288,6 @@ void CommTask(void *argument)
 #ifdef USB_COMM
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1));
     host_processor();
-    update_current(&S.motor, g_adc_buffer[0], g_adc_buffer[1]);
 #else
     vTaskDelay(pdMS_TO_TICKS(1));
     MX_BlueNRG_2_Process(xTaskGetTickCount());
@@ -357,21 +315,19 @@ void host_processor(void)
   switch(S.mode) {
 
   case(IDLE_MODE):
-    S.cmd.raw = get_usb_data32(0);
+    S.cmd = get_usb_data32(0);
     load_telemetry();
     set_usb_tx_mode(IDLE_MODE);
     break;
 
   case(RUN_MODE):
-    S.cmd.raw = get_usb_data32(0);
+    S.cmd = get_usb_data32(0);
     load_telemetry();
     set_usb_tx_mode(RUN_MODE);
     break;
 
   case(CAL_MODE):
-    S.cmd.raw = get_usb_data32(0);
-    // update calibration state step commands
-//    cal_state_step(&S.left, framework.milliseconds);
+    S.cmd = get_usb_data32(0);
     load_telemetry();
     set_usb_tx_mode(CAL_MODE);
     break;
@@ -417,7 +373,7 @@ void host_processor(void)
     break;
 
   default:
-    S.cmd.raw = get_usb_data32(0);
+    S.cmd = get_usb_data32(0);
     load_telemetry();
     break;
   }
@@ -430,24 +386,24 @@ void implement_parameters(void)
   P.InfoNumParameters = NUM_PARAMETERS;
   P.InfoSwChecksum = *(int32_t *)(&S.rom_crc32);
   P.InfoSwVersion = SW_VERSION;
+
+  init_pid(&S.motor.id_pid, TRUE, P.PidFocPropGain, P.PidFocIntGain, 0, P.PidFocLimit, -P.PidFocLimit, CONTROL_FREQUENCY);
+  init_pid(&S.motor.iq_pid, TRUE, P.PidFocPropGain, P.PidFocIntGain, 0, P.PidFocLimit, -P.PidFocLimit, CONTROL_FREQUENCY);
 }
 
 void load_telemetry(void)
 {
-  set_usb_data32(0, FLOAT_TO_INT_BITS(S.cmd.out));
-  set_usb_data32(1, FLOAT_TO_INT_BITS(S.controller.u));
-  set_usb_data32(2, FLOAT_TO_INT_BITS(S.controller.r));
-  set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
-  set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
-  set_usb_data32(5, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[0]));
-  set_usb_data32(6, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[1]));
-  set_usb_data32(7, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[2]));
-  set_usb_data32(8, FLOAT_TO_INT_BITS(S.controller.obs.error));
-  set_usb_data32(9, g_adc_buffer[0]);
-  set_usb_data32(10, g_adc_buffer[1]);
-  set_usb_data32(11, FLOAT_TO_INT_BITS(S.motor.current));
-  set_usb_data32(12, S.motor.cmd_state);
-  set_usb_data32(13, S.motor.hall.state);
+  set_usb_data32(0, S.cmd);
+//  set_usb_data32(1, FLOAT_TO_INT_BITS(S.controller.u));
+//  set_usb_data32(2, FLOAT_TO_INT_BITS(S.controller.r));
+//  set_usb_data32(3, FLOAT_TO_INT_BITS(S.pwm_cmd));
+//  set_usb_data32(4, FLOAT_TO_INT_BITS(S.motor.encoder.out));
+//  set_usb_data32(5, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[0]));
+//  set_usb_data32(6, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[1]));
+//  set_usb_data32(7, FLOAT_TO_INT_BITS(S.controller.obs.ss.x[2]));
+//  set_usb_data32(8, FLOAT_TO_INT_BITS(S.controller.obs.error));
+//  set_usb_data32(9, g_adc_buffer[0]);
+//  set_usb_data32(10, g_adc_buffer[1]);
 }
 
 void load_bootloader(void)
@@ -456,16 +412,10 @@ void load_bootloader(void)
   NVIC_SystemReset();
 }
 
-volatile uint32_t g_call_count = 0;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-  g_call_count++;
+  drive_control(&S.motor, CURRENT_SCALE(g_adc_buffer[0]), CURRENT_SCALE(g_adc_buffer[1]));
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-  update_hall_state(&S.motor.hall);
-  update_state_cmd(&S.motor);
-}
 /* USER CODE END Application */
 

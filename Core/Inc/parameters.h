@@ -1,14 +1,15 @@
 #ifndef PARAMETERS_H_
 #define PARAMETERS_H_
 
-#define NUM_PARAMETERS 5
+#define NUM_PARAMETERS 6
 
 typedef struct {
   /*0*/ long InfoNumParameters;
   /*1*/ long InfoSwChecksum;
   /*2*/ float InfoSwVersion;
-  /*3*/ long Reserved0;
-  /*4*/ float Reserved1;
+  /*3*/ float PidFocPropGain;
+  /*4*/ float PidFocIntGain;
+  /*5*/ float PidFocLimit;
 } PARAMETER;
 
 extern PARAMETER P;

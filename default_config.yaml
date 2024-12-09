@@ -159,10 +159,14 @@ parameters:
     type: float 
     value: 2.0 
   - # 3 
-    name: Reserved 0 
+    name: PidFocPropGain 
     type: float 
-    value: 3.14 
-  - # 4 
-    name: Reserved 1 
-    type: int 
-    value: 1234 
+    value: 1.0
+  - # 4
+    name: PidFocIntGain 
+    type: float 
+    value: 1.0
+  - # 5 
+    name: PidFocLimit
+    type: float 
+    value: 1.0

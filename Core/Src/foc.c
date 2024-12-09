@@ -8,12 +8,10 @@
 #include "foc.h"
 #include "dsp.h"
 
-void foc_init(FOC* restrict foc, float_t vd_limit, float_t vq_limit)
+void foc_init(FOC* restrict foc, float_t vd_limit)
 {
-  float_t vq_limit_max;
   foc->ipark.vd_limit = limit_f(vd_limit, 1.0F, 0.0F);
-  vq_limit_max = sqrtf(1.0F - (foc->ipark.vd_limit * foc->ipark.vd_limit));
-  foc->ipark.vq_limit = limit_f(vq_limit, vq_limit_max, 0.0F);
+  foc->ipark.vq_limit = sqrtf(1.0F - (foc->ipark.vd_limit * foc->ipark.vd_limit));
 }
 
 void foc_input(FOC* restrict foc, float_t phase_a, float_t phase_b, float_t angle)

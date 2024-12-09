@@ -11,13 +11,8 @@
 #include "stm32g4xx_hal.h"
 #include "math.h"
 #include "main.h"
-
-// hall index limits
-#define HALL_MAX    6
-#define HALL_MIN    1
-#define HALL_ROLLOVER         -5
-// expected sum of the valid hall indices
-#define HALL_MAP_SUM  21
+#include "foc.h"
+#include "dsp.h"
 
 #define SET_PWM1_ON(I)     (I->CCER |= (TIM_CCER_CC1E_Msk | TIM_CCER_CC1NE_Msk)); \
                            (I->CCMR1 = (I->CCMR1 & ~TIM_CCMR1_OC1M_Msk) | TIM_OCMODE_PWM1)
@@ -39,25 +34,6 @@
                             (I->CCMR1 = (I->CCMR1 & ~TIM_CCMR1_OC2M_Msk) | (TIM_OCMODE_FORCED_INACTIVE << 8))
 #define SET_PWM3_OFF(I)     (I->CCER = (I->CCER & ~TIM_CCER_CC3E_Msk) | TIM_CCER_CC3NE); \
                             (I->CCMR2 = (I->CCMR2 & ~TIM_CCMR2_OC3M_Msk) | TIM_OCMODE_FORCED_INACTIVE)
-
-typedef struct {
-  TIM_HandleTypeDef *tim;
-  int8_t polarity;
-  int8_t index_previous;
-  int8_t index;
-  int8_t state_delta;
-
-  uint16_t map[7];
-  volatile int8_t state;
-  volatile int8_t state_previous;
-  volatile int32_t position;
-  volatile float_t period;
-
-  int32_t position_previous;
-  int32_t position_delta;
-  float_t velocity;
-} HALL_SENSORS;
-
 typedef struct {
   TIM_HandleTypeDef *tim;
   volatile int32_t position;
@@ -67,31 +43,29 @@ typedef struct {
 } ENCODER;
 
 typedef struct {
-  HALL_SENSORS hall;
   ENCODER encoder;
+  FOC foc;
+  PID iq_pid;
+  PID id_pid;
+
+  volatile float_t torque_cmd;
+
+  volatile int16_t compare_1;
+  volatile int16_t compare_2;
+  volatile int16_t compare_3;
 
   volatile uint8_t enable;
   TIM_HandleTypeDef *pwm_tim;
-  int8_t polarity;
-  float_t pwm_command;
-  uint16_t compare;
-  int16_t cmd_state;
-  int16_t cal_state;
+  float_t half_period;
+} MOTOR_DRIVE;
 
-  float_t current;
-} TRAP_DRIVE;
+void init_motor_drive(MOTOR_DRIVE* drive, TIM_HandleTypeDef *pwm_tim);
+void init_encoder(ENCODER* encoder, TIM_HandleTypeDef *encoder_tim);
+void enable_drive(MOTOR_DRIVE* drive, uint8_t enable);
+__attribute__ ((long_call, section (".RamFunc"))) void drive_control(MOTOR_DRIVE* drive, float_t phase_a, float_t phase_b);
+void update_pwm_outputs(MOTOR_DRIVE* drive);
+void cal_angle(MOTOR_DRIVE* drive);
 
-void init_trap_drive(TRAP_DRIVE *trap_drive, TIM_HandleTypeDef *pwm_tim, TIM_HandleTypeDef *hall_tim, int32_t direction);
-void init_encoder(ENCODER *encoder, TIM_HandleTypeDef *encoder_tim);
-void enable_trap_drive(TRAP_DRIVE *trap_drive, uint8_t enable);
-void update_state_cmd(TRAP_DRIVE *trap_drive);
-
-void update_pwm_cmd(TRAP_DRIVE *trap_drive, float_t command);
-__attribute__ ((long_call, section (".RamFunc"))) void update_current(TRAP_DRIVE *trap_drive, float_t phase_a, float_t phase_b);
-int32_t update_trap_cal(TRAP_DRIVE *trap_drive);
-__attribute__ ((long_call, section (".RamFunc"))) void update_hall_state(HALL_SENSORS *hall);
-void update_hall_velocity(HALL_SENSORS *hall, float_t gain);
-void update_encoder_position(ENCODER *encoder);
-float_t scale_voltage_command(float_t u);
+void update_encoder_position(ENCODER* encoder);
 
 #endif /* INC_MOTOR_H_ */

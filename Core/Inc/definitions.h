@@ -26,18 +26,10 @@
 extern uint16_t __RAM_END, __CODE_START, __CODE_END, __EEPROM_START;
 #define CRC32_SEED            0x04C11DB7
 
-#define INPUT_VOLTAGE       26.0F
-
-// control law definitions
-#define CMD_SCALING         0.001F
-#define TRACKING_GAIN       10.1647F
-#define CONTROL_K0          12.0744F
-#define CONTROL_K1          0.7060F
-#define CONTROL_K2          0.0192F
-
 // encoder definitions
 #define ENCODER_GAIN        ((2.0F * PI) / (S.motor.encoder.tim->Init.Period + 1))
 #define ENCODER_OFFSET      -7290
+#define CONTROL_FREQUENCY   20000
 
 #define BOOT_DELAY_TIME     1000
 #define CTRL_TASK_PERIOD    10

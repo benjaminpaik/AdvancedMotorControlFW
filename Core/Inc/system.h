@@ -9,14 +9,7 @@
 #define INC_SYSTEM_H_
 
 #include "motor.h"
-#include "state_space.h"
 #include "dsp.h"
-
-typedef struct {
-  float scale;
-  int32_t raw;
-  float out;
-} COMMAND;
 
 typedef union {
   struct {
@@ -34,10 +27,8 @@ typedef struct {
   uint8_t mode;
   uint8_t mode_previous;
 
-  float_t pwm_cmd;
-  STATE_CONTROLLER controller;
-  TRAP_DRIVE motor;
-  COMMAND cmd;
+  int32_t cmd;
+  MOTOR_DRIVE motor;
 } SYSTEM;
 
 #endif /* INC_SYSTEM_H_ */

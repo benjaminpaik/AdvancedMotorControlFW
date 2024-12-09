@@ -66,6 +66,7 @@ typedef enum {
   SECTOR_6 = 6
 } SV_SECTOR_MAP;
 
+void foc_init(FOC* restrict foc, float_t vd_limit);
 void foc_input(FOC* restrict foc, float_t phase_a, float_t phase_b, float_t angle);
 void foc_clarke(FOC* restrict foc);
 void foc_park(FOC* restrict foc);

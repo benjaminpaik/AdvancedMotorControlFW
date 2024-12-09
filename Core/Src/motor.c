@@ -11,25 +11,16 @@
 #include "tim.h"
 #include "stdlib.h"
 
-void disable_trap_drive(TRAP_DRIVE *trap_drive);
-void init_hall_sensors(HALL_SENSORS *hall, TIM_HandleTypeDef *hall_tim);
+void disable_drive(MOTOR_DRIVE *drive);
 
-void init_trap_drive(TRAP_DRIVE *trap_drive, TIM_HandleTypeDef *pwm_tim, TIM_HandleTypeDef *hall_tim, int32_t direction)
+void init_motor_drive(MOTOR_DRIVE *drive, TIM_HandleTypeDef *pwm_tim)
 {
-  init_hall_sensors(&trap_drive->hall, hall_tim);
+  drive->pwm_tim = pwm_tim;
+  drive->enable = FALSE;
 
-  trap_drive->pwm_tim = pwm_tim;
-  trap_drive->cmd_state = 1;
-  trap_drive->pwm_command = 0;
-  trap_drive->compare = 0;
-  trap_drive->enable = FALSE;
+  drive->half_period = drive->pwm_tim->Init.Period / 2;
 
-  if(direction > 0) {
-    trap_drive->polarity = 1;
-  }
-  else {
-    trap_drive->polarity = -1;
-  }
+  foc_init(&drive->foc, 0.2);
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
@@ -37,27 +28,7 @@ void init_trap_drive(TRAP_DRIVE *trap_drive, TIM_HandleTypeDef *pwm_tim, TIM_Han
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-  disable_trap_drive(trap_drive);
-}
-
-void init_hall_sensors(HALL_SENSORS *hall, TIM_HandleTypeDef *hall_tim)
-{
-  hall->tim = hall_tim;
-  hall->index = (HAL_GPIO_ReadPin(HALL_C_GPIO_Port, HALL_C_Pin) << 2) |
-                (HAL_GPIO_ReadPin(HALL_B_GPIO_Port, HALL_B_Pin) << 1) |
-                (HAL_GPIO_ReadPin(HALL_A_GPIO_Port, HALL_A_Pin));
-
-  hall->map[0] = 0;
-  hall->map[1] = 3;
-  hall->map[2] = 5;
-  hall->map[3] = 4;
-  hall->map[4] = 1;
-  hall->map[5] = 2;
-  hall->map[6] = 6;
-
-  hall->state = hall->map[hall->index];
-  hall->polarity = 1;
-  hall->period = 0;
+  disable_drive(drive);
 }
 
 void init_encoder(ENCODER *encoder, TIM_HandleTypeDef *encoder_tim)
@@ -66,257 +37,59 @@ void init_encoder(ENCODER *encoder, TIM_HandleTypeDef *encoder_tim)
   HAL_TIM_Encoder_Start(encoder_tim, TIM_CHANNEL_ALL);
 }
 
-void enable_trap_drive(TRAP_DRIVE *trap_drive, uint8_t enable)
+void enable_drive(MOTOR_DRIVE *drive, uint8_t enable)
 {
-  if(enable != trap_drive->enable) {
-    trap_drive->enable = enable;
-
-    if(enable) {
-      update_state_cmd(trap_drive);
-    }
-    else {
-      disable_trap_drive(trap_drive);
-    }
+  drive->enable = enable;
+  if(!enable) {
+    disable_drive(drive);
   }
 }
 
-void update_pwm_cmd(TRAP_DRIVE *trap_drive, float_t command)
+void drive_control(MOTOR_DRIVE *drive, float_t phase_a, float_t phase_b)
 {
- trap_drive->pwm_command = limit_f(command, 1.0F, -1.0F) * trap_drive->polarity;
- trap_drive->compare = abs(trap_drive->pwm_tim->Init.Period * trap_drive->pwm_command);
+  update_encoder_position(&drive->encoder);
 
- __HAL_TIM_SET_COMPARE(trap_drive->pwm_tim, TIM_CHANNEL_1, trap_drive->compare);
- __HAL_TIM_SET_COMPARE(trap_drive->pwm_tim, TIM_CHANNEL_2, trap_drive->compare);
- __HAL_TIM_SET_COMPARE(trap_drive->pwm_tim, TIM_CHANNEL_3, trap_drive->compare);
-}
+  foc_input(&drive->foc, phase_a, phase_b, drive->encoder.out);
+  foc_clarke(&drive->foc);
+  foc_park(&drive->foc);
 
-void update_state_cmd(TRAP_DRIVE *trap_drive)
-{
-  if(trap_drive->enable) {
+  if(drive->enable) {
+    pi_control(&drive->id_pid, 0, drive->foc.park.id, PID_IN_RANGE);
+    pi_control(&drive->iq_pid, drive->torque_cmd, drive->foc.park.iq, PID_IN_RANGE);
 
-	  if(trap_drive->pwm_command >= 0) {
-	    trap_drive->cmd_state = trap_drive->hall.state + 1;
-	    if(trap_drive->cmd_state > HALL_MAX) {
-	      trap_drive->cmd_state -= HALL_MAX;
-	    }
-	  }
-	  else {
-	    trap_drive->cmd_state = trap_drive->hall.state - 2;
-	    if(trap_drive->cmd_state < HALL_MIN) {
-	      trap_drive->cmd_state += HALL_MAX;
-	    }
-	  }
-
-    switch(trap_drive->cmd_state) {
-
-    case(1):
-      SET_PWM3_OFF(trap_drive->pwm_tim->Instance);
-      SET_PWM2_LOW(trap_drive->pwm_tim->Instance);
-      SET_PWM1_ON(trap_drive->pwm_tim->Instance);
-      break;
-
-    case(2):
-      SET_PWM2_OFF(trap_drive->pwm_tim->Instance);
-      SET_PWM3_LOW(trap_drive->pwm_tim->Instance);
-      SET_PWM1_ON(trap_drive->pwm_tim->Instance);
-      break;
-
-    case(3):
-      SET_PWM1_OFF(trap_drive->pwm_tim->Instance);
-      SET_PWM3_LOW(trap_drive->pwm_tim->Instance);
-      SET_PWM2_ON(trap_drive->pwm_tim->Instance);
-      break;
-
-    case(4):
-      SET_PWM3_OFF(trap_drive->pwm_tim->Instance);
-      SET_PWM1_LOW(trap_drive->pwm_tim->Instance);
-      SET_PWM2_ON(trap_drive->pwm_tim->Instance);
-      break;
-
-    case(5):
-      SET_PWM2_OFF(trap_drive->pwm_tim->Instance);
-      SET_PWM1_LOW(trap_drive->pwm_tim->Instance);
-      SET_PWM3_ON(trap_drive->pwm_tim->Instance);
-      break;
-
-    case(6):
-      SET_PWM1_OFF(trap_drive->pwm_tim->Instance);
-      SET_PWM2_LOW(trap_drive->pwm_tim->Instance);
-      SET_PWM3_ON(trap_drive->pwm_tim->Instance);
-      break;
-
-    default:
-      break;
-    }
+    foc_ipark(&drive->foc, drive->id_pid.out, drive->iq_pid.out);
+    foc_svpwm(&drive->foc);
+    update_pwm_outputs(drive);
   }
 }
 
-void update_current(TRAP_DRIVE *trap_drive, float_t phase_a, float_t phase_b)
+void update_pwm_outputs(MOTOR_DRIVE* drive)
 {
-  switch(trap_drive->cmd_state) {
+  drive->compare_1 = (drive->foc.sv.t1 * drive->half_period) + drive->half_period;
+  drive->compare_2 = (drive->foc.sv.t2 * drive->half_period) + drive->half_period;
+  drive->compare_3 = (drive->foc.sv.t3 * drive->half_period) + drive->half_period;
 
-  case(1):
-    trap_drive->current = CURRENT_SCALE(phase_a);
-    break;
+  if(drive->compare_1 < 0) drive->compare_1 = 0;
+  if(drive->compare_2 < 0) drive->compare_2 = 0;
+  if(drive->compare_3 < 0) drive->compare_3 = 0;
 
-  case(2):
-    trap_drive->current = CURRENT_SCALE(phase_a);
-    break;
-
-  case(3):
-    trap_drive->current = CURRENT_SCALE(phase_b);
-    break;
-
-  case(4):
-    trap_drive->current = CURRENT_SCALE(phase_b);
-    break;
-
-  case(5):
-    trap_drive->current = -CURRENT_SCALE(phase_a);
-    break;
-
-  case(6):
-    trap_drive->current = -CURRENT_SCALE(phase_b);
-    break;
-
-  default:
-    trap_drive->current =  CURRENT_SCALE(phase_a);
-    break;
-  }
+  __HAL_TIM_SET_COMPARE(drive->pwm_tim, TIM_CHANNEL_1, drive->compare_1);
+  __HAL_TIM_SET_COMPARE(drive->pwm_tim, TIM_CHANNEL_2, drive->compare_2);
+  __HAL_TIM_SET_COMPARE(drive->pwm_tim, TIM_CHANNEL_3, drive->compare_3);
 }
 
-int32_t update_trap_cal(TRAP_DRIVE *trap_drive)
+void cal_angle(MOTOR_DRIVE *drive)
 {
-  static PERSISTENCE persistence = {.threshold = 500, .latch = FALSE};
-  trap_drive->enable = FALSE;
-
-  // check for valid state command
-  if(trap_drive->cal_state >= HALL_MIN && trap_drive->cal_state <= HALL_MAX) {
-    // if the state has not changed for one second
-    if(persistence_check(&persistence, (trap_drive->hall.index_previous == trap_drive->hall.index))) {
-      if(trap_drive->hall.index <= HALL_MAX) {
-        trap_drive->hall.map[trap_drive->hall.index] = trap_drive->cal_state;
-      }
-      trap_drive->cal_state++;
-      persistence.timer = 0;
-    }
-    trap_drive->hall.index_previous = trap_drive->hall.index;
-  }
-
-  switch(trap_drive->cal_state) {
-
-  case(1):
-    SET_PWM1_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM3_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM2_LOW(trap_drive->pwm_tim->Instance);
-    break;
-
-  case(2):
-    SET_PWM1_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM2_LOW(trap_drive->pwm_tim->Instance);
-    SET_PWM3_LOW(trap_drive->pwm_tim->Instance);
-    break;
-
-  case(3):
-    SET_PWM1_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM2_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM3_LOW(trap_drive->pwm_tim->Instance);
-    break;
-
-  case(4):
-    SET_PWM2_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM1_LOW(trap_drive->pwm_tim->Instance);
-    SET_PWM3_LOW(trap_drive->pwm_tim->Instance);
-    break;
-
-  case(5):
-    SET_PWM2_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM3_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM1_LOW(trap_drive->pwm_tim->Instance);
-    break;
-
-  case(6):
-    SET_PWM3_ON(trap_drive->pwm_tim->Instance);
-    SET_PWM1_LOW(trap_drive->pwm_tim->Instance);
-    SET_PWM2_LOW(trap_drive->pwm_tim->Instance);
-    break;
-
-  default:
-    disable_trap_drive(trap_drive);
-    trap_drive->cal_state = 0;
-
-    // check for valid hall mapping
-    if(trap_drive->hall.map[1] + trap_drive->hall.map[2] +
-       trap_drive->hall.map[3] + trap_drive->hall.map[4] +
-       trap_drive->hall.map[5] + trap_drive->hall.map[6] == HALL_MAP_SUM) {
-      // return the hall map encoding
-      return ((int32_t)trap_drive->hall.map[6] << 20) |
-             ((int32_t)trap_drive->hall.map[5] << 16) |
-             ((int32_t)trap_drive->hall.map[4] << 12) |
-             ((int32_t)trap_drive->hall.map[3] << 8)  |
-             ((int32_t)trap_drive->hall.map[2] << 4)  |
-             ((int32_t)trap_drive->hall.map[1]);
-    }
-    // restart calibration sequence if hall map not valid
-    else {
-      trap_drive->cal_state = 1;
-    }
-  }
-  // hall map not yet determined
-  return 0;
+  SET_PWM1_LOW(drive->pwm_tim->Instance);
+  SET_PWM2_ON(drive->pwm_tim->Instance);
+  SET_PWM3_ON(drive->pwm_tim->Instance);
 }
 
-void disable_trap_drive(TRAP_DRIVE *trap_drive)
+void disable_drive(MOTOR_DRIVE *drive)
 {
-  SET_PWM1_OFF(trap_drive->pwm_tim->Instance);
-  SET_PWM2_OFF(trap_drive->pwm_tim->Instance);
-  SET_PWM3_OFF(trap_drive->pwm_tim->Instance);
-}
-
-void update_hall_state(HALL_SENSORS *hall)
-{
-  hall->period = __HAL_TIM_GET_COUNTER(hall->tim);
-  __HAL_TIM_SET_COUNTER(hall->tim, 0);
-  HAL_TIM_Base_Start(hall->tim);
-
-  hall->index = (HAL_GPIO_ReadPin(HALL_C_GPIO_Port, HALL_C_Pin) << 2) |
-                (HAL_GPIO_ReadPin(HALL_B_GPIO_Port, HALL_B_Pin) << 1) |
-                (HAL_GPIO_ReadPin(HALL_A_GPIO_Port, HALL_A_Pin));
-
-  hall->state = hall->map[hall->index];
-  hall->state_delta = hall->state - hall->state_previous;
-
-  if(hall->state_delta == HALL_ROLLOVER || hall->state_delta == 1) {
-    hall->position++;
-  }
-  else {
-    hall->position--;
-  }
-  hall->state_previous = hall->state;
-}
-
-void update_hall_velocity(HALL_SENSORS *hall, float_t gain)
-{
-  uint32_t counter = __HAL_TIM_GET_COUNTER(hall->tim);
-  hall->position_delta = hall->position - hall->position_previous;
-
-  // valid hall state transition and new velocity measurement
-  if(hall->position_delta != 0) {
-    hall->polarity = (hall->position_delta > 0) ? 1 : -1;
-    if(hall->period > 0) {
-      hall->velocity = (gain / hall->period) * hall->polarity;
-    }
-  }
-  // no hall state transition and more time has passed since the previous sample
-  else if(counter > hall->period) {
-    hall->velocity = (gain / counter) * hall->polarity;
-  }
-  // timeout
-  else if(counter == 0) {
-    hall->velocity = 0;
-  }
-  // store the previous hall state value
-  hall->position_previous = hall->position;
+  SET_PWM1_OFF(drive->pwm_tim->Instance);
+  SET_PWM2_OFF(drive->pwm_tim->Instance);
+  SET_PWM3_OFF(drive->pwm_tim->Instance);
 }
 
 void update_encoder_position(ENCODER *encoder)
@@ -332,12 +105,4 @@ void update_encoder_position(ENCODER *encoder)
   }
   encoder->position -= ((encoder->tim->Init.Period + 1) >> 1);
   encoder->out = encoder->gain * encoder->position;
-}
-
-float_t scale_voltage_command(float_t u)
-{
-  float_t pwm;
-  pwm = (u / INPUT_VOLTAGE) * 1.0F;
-  pwm = limit_f(pwm, 0.25, -0.25);
-  return pwm;
 }
