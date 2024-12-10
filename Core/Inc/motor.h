@@ -34,6 +34,7 @@
                             (I->CCMR1 = (I->CCMR1 & ~TIM_CCMR1_OC2M_Msk) | (TIM_OCMODE_FORCED_INACTIVE << 8))
 #define SET_PWM3_OFF(I)     (I->CCER = (I->CCER & ~TIM_CCER_CC3E_Msk) | TIM_CCER_CC3NE); \
                             (I->CCMR2 = (I->CCMR2 & ~TIM_CCMR2_OC3M_Msk) | TIM_OCMODE_FORCED_INACTIVE)
+
 typedef struct {
   TIM_HandleTypeDef *tim;
   volatile int32_t position;
@@ -59,13 +60,12 @@ typedef struct {
   float_t half_period;
 } MOTOR_DRIVE;
 
-void init_motor_drive(MOTOR_DRIVE* drive, TIM_HandleTypeDef *pwm_tim);
-void init_encoder(ENCODER* encoder, TIM_HandleTypeDef *encoder_tim);
+void init_motor_drive(MOTOR_DRIVE* drive, TIM_HandleTypeDef* pwm_tim);
+void init_encoder(ENCODER* encoder, TIM_HandleTypeDef* encoder_tim);
 void enable_drive(MOTOR_DRIVE* drive, uint8_t enable);
-__attribute__ ((long_call, section (".RamFunc"))) void drive_control(MOTOR_DRIVE* drive, float_t phase_a, float_t phase_b);
+__attribute__ ((long_call, section (".RamFunc"))) void drive_control(MOTOR_DRIVE* drive, float_t phase_a, float_t phase_b, float_t vdc);
 void update_pwm_outputs(MOTOR_DRIVE* drive);
 void cal_angle(MOTOR_DRIVE* drive);
-
 void update_encoder_position(ENCODER* encoder);
 
 #endif /* INC_MOTOR_H_ */

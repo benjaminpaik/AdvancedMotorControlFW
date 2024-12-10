@@ -13,9 +13,9 @@ command:
 telemetry: 
   - # 0 
     name: command
-    max: 3.14
-    min: -3.14
-    type: float
+    max: 1000.0
+    min: -1000.0
+    type: int
     scale: 1.0
     color: white
     display: true

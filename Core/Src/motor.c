@@ -11,9 +11,7 @@
 #include "tim.h"
 #include "stdlib.h"
 
-void disable_drive(MOTOR_DRIVE *drive);
-
-void init_motor_drive(MOTOR_DRIVE *drive, TIM_HandleTypeDef *pwm_tim)
+void init_motor_drive(MOTOR_DRIVE* drive, TIM_HandleTypeDef *pwm_tim)
 {
   drive->pwm_tim = pwm_tim;
   drive->enable = FALSE;
@@ -28,24 +26,36 @@ void init_motor_drive(MOTOR_DRIVE *drive, TIM_HandleTypeDef *pwm_tim)
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-  disable_drive(drive);
+
+  SET_PWM1_OFF(drive->pwm_tim->Instance);
+  SET_PWM2_OFF(drive->pwm_tim->Instance);
+  SET_PWM3_OFF(drive->pwm_tim->Instance);
 }
 
-void init_encoder(ENCODER *encoder, TIM_HandleTypeDef *encoder_tim)
+void init_encoder(ENCODER* encoder, TIM_HandleTypeDef *encoder_tim)
 {
   encoder->tim = encoder_tim;
   HAL_TIM_Encoder_Start(encoder_tim, TIM_CHANNEL_ALL);
 }
 
-void enable_drive(MOTOR_DRIVE *drive, uint8_t enable)
+void enable_drive(MOTOR_DRIVE* drive, uint8_t enable)
 {
-  drive->enable = enable;
-  if(!enable) {
-    disable_drive(drive);
+  if(enable != drive->enable) {
+    if(enable) {
+      SET_PWM1_ON(drive->pwm_tim->Instance);
+      SET_PWM2_ON(drive->pwm_tim->Instance);
+      SET_PWM3_ON(drive->pwm_tim->Instance);
+    }
+    else {
+      SET_PWM1_OFF(drive->pwm_tim->Instance);
+      SET_PWM2_OFF(drive->pwm_tim->Instance);
+      SET_PWM3_OFF(drive->pwm_tim->Instance);
+    }
+    drive->enable = enable;
   }
 }
 
-void drive_control(MOTOR_DRIVE *drive, float_t phase_a, float_t phase_b)
+void drive_control(MOTOR_DRIVE* drive, float_t phase_a, float_t phase_b, float_t vdc)
 {
   update_encoder_position(&drive->encoder);
 
@@ -56,8 +66,8 @@ void drive_control(MOTOR_DRIVE *drive, float_t phase_a, float_t phase_b)
   if(drive->enable) {
     pi_control(&drive->id_pid, 0, drive->foc.park.id, PID_IN_RANGE);
     pi_control(&drive->iq_pid, drive->torque_cmd, drive->foc.park.iq, PID_IN_RANGE);
-
-    foc_ipark(&drive->foc, drive->id_pid.out, drive->iq_pid.out);
+    // normalize the PID outputs against the DC bus voltage
+    foc_ipark(&drive->foc, (drive->id_pid.out / vdc), (drive->iq_pid.out / vdc));
     foc_svpwm(&drive->foc);
     update_pwm_outputs(drive);
   }
@@ -78,21 +88,14 @@ void update_pwm_outputs(MOTOR_DRIVE* drive)
   __HAL_TIM_SET_COMPARE(drive->pwm_tim, TIM_CHANNEL_3, drive->compare_3);
 }
 
-void cal_angle(MOTOR_DRIVE *drive)
+void cal_angle(MOTOR_DRIVE* drive)
 {
   SET_PWM1_LOW(drive->pwm_tim->Instance);
   SET_PWM2_ON(drive->pwm_tim->Instance);
   SET_PWM3_ON(drive->pwm_tim->Instance);
 }
 
-void disable_drive(MOTOR_DRIVE *drive)
-{
-  SET_PWM1_OFF(drive->pwm_tim->Instance);
-  SET_PWM2_OFF(drive->pwm_tim->Instance);
-  SET_PWM3_OFF(drive->pwm_tim->Instance);
-}
-
-void update_encoder_position(ENCODER *encoder)
+void update_encoder_position(ENCODER* encoder)
 {
   encoder->position = encoder->tim->Instance->CNT;
   encoder->position += encoder->offset;

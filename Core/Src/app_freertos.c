@@ -414,7 +414,10 @@ void load_bootloader(void)
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-  drive_control(&S.motor, CURRENT_SCALE(g_adc_buffer[0]), CURRENT_SCALE(g_adc_buffer[1]));
+  drive_control(&S.motor,
+                CURRENT_SCALE(g_adc_buffer[0]),
+                CURRENT_SCALE(g_adc_buffer[1]),
+                VOLTAGE_SCALE(g_adc_buffer[2]));
 }
 
 /* USER CODE END Application */

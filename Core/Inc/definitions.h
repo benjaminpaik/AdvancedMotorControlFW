@@ -51,5 +51,6 @@ typedef enum {
 #define STATES_PER_REV    (24)
 #define VELOCITY_GAIN     (TIMER_CLOCK_FREQ * (60.0F / STATES_PER_REV))
 #define CURRENT_SCALE(X)  (((12.5F / 2047.5F) * (X)) - 12.5F)
+#define VOLTAGE_SCALE(X)  (0.02442F * (X))
 
 #endif /* INC_DEFINITIONS_H_ */
