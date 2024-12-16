@@ -15,7 +15,14 @@
 #define COS_30      0.866F
 #define COS_60      0.5F
 
+#define Q31_P1   0x7FFFFFFF
+#define Q31_N1   0x80000000
+
+#define Q31_TO_FLOAT(X)   ((X) * (1.0F / Q31_P1))
+#define FLOAT_TO_Q31(X)   ((X) * Q31_P1)
+
 typedef struct {
+  volatile int32_t q31_angle;
   volatile float_t phase_a;
   volatile float_t phase_b;
   volatile float_t sin;

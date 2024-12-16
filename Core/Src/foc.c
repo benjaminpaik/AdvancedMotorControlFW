@@ -7,20 +7,30 @@
 
 #include "foc.h"
 #include "dsp.h"
+#include "cordic.h"
+#include "stm32g4xx_ll_cordic.h"
 
 void foc_init(FOC* restrict foc, float_t vd_limit)
 {
   foc->ipark.vd_limit = limit_f(vd_limit, 1.0F, 0.0F);
   foc->ipark.vq_limit = sqrtf(1.0F - (foc->ipark.vd_limit * foc->ipark.vd_limit));
+
+  // initialize cordic engine for sine/cosine calculations
+  LL_CORDIC_SetFunction(hcordic.Instance, LL_CORDIC_FUNCTION_SINE);
+  LL_CORDIC_SetNbWrite(hcordic.Instance, LL_CORDIC_NBWRITE_2);
+  LL_CORDIC_SetNbRead(hcordic.Instance, LL_CORDIC_NBREAD_2);
 }
 
 void foc_input(FOC* restrict foc, float_t phase_a, float_t phase_b, float_t angle)
 {
+  foc->input.q31_angle = limit_f(FLOAT_TO_Q31((angle * (1.0F / PI))), Q31_P1, ((int32_t)Q31_N1));
   foc->input.phase_a = phase_a;
   foc->input.phase_b = phase_b;
 
-  foc->input.sin = sinf(angle);
-  foc->input.cos = cosf(angle);
+  LL_CORDIC_WriteData(hcordic.Instance, foc->input.q31_angle);
+  LL_CORDIC_WriteData(hcordic.Instance, Q31_P1);
+  foc->input.sin = Q31_TO_FLOAT((int32_t)LL_CORDIC_ReadData(hcordic.Instance));
+  foc->input.cos = Q31_TO_FLOAT((int32_t)LL_CORDIC_ReadData(hcordic.Instance));
 }
 
 void foc_clarke(FOC* restrict foc)
